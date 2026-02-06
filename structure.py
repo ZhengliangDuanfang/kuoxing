@@ -1,4 +1,4 @@
-from parts import Zhu, Liang, Lin, JiaoLiang, Fang, BianChuan, FengYan, DouGong
+from parts import Zhu, Liang, Gong, Lin, Fang, Cao, Ji, Yan
 from numbering import int_to_code
 import pyvista as pv
 import numpy as np
@@ -10,12 +10,12 @@ class Structure:
         self.insts = []
         self.zhu_int = 0
         self.liang_int = 0
+        self.gong_int = 0
         self.lin_int = 0
-        self.jiaoliang_int = 0
         self.fang_int = 0
-        self.bianchuan_int = 0
-        self.fengyan_int = 0
-        self.dougong_int = 0
+        self.cao_int = 0
+        self.ji_int = 0
+        self.yan_int = 0
         self.position = [(2000, -2000, 2000), (0, 1000, 0)]
         self.show_ref = False
         self.plotter = pv.Plotter()
@@ -27,9 +27,9 @@ class Structure:
                     self.insts.append(line)
 
     def render(self):
-        lines = [p.endpoints() for p in self.parts if not isinstance(p, DouGong)]
+        lines = [p.endpoints() for p in self.parts if not isinstance(p, Gong) and not isinstance(p, Cao)]
         for p in self.parts: 
-            if isinstance(p, DouGong):
+            if isinstance(p, Gong):
                 lines += p.endpoint_list()
         # print(lines)
 
@@ -58,40 +58,16 @@ class Structure:
                 return part
         return None
 
-    def add_zhu_on_di(self, inst: str, x: int, y: int, height: int, radius: int):
+    def add_zhu_on_di(self, x: int, y: int, height: int):
         new_code = int_to_code(self.zhu_int)
         self.zhu_int += 1
-        self.parts.append(Zhu(new_code, x, y, 0, height, radius, []))
-        
+        self.parts.append(Zhu(new_code, x, y, 0, height, [], []))
         return new_code
 
-    def add_liang_on_zhu(self, inst: str, zhu1: str, zhu2: str, width: int, height: int, in_ext: int, out_ext: int):
-        founded_zhus = []
-        for zhu in [zhu1, zhu2]:
-            founded_zhu = self.find_part("Zhu", zhu)
-            if founded_zhu is None:
-                raise ValueError(f"柱{zhu}不存在")
-            founded_zhus.append(founded_zhu)
-        x1, y1 = founded_zhus[0].x, founded_zhus[0].y
-        x2, y2 = founded_zhus[1].x, founded_zhus[1].y
-        base_zhus = [zhu1, zhu2]
-        if x1 != x2 and y1 != y2:
-            raise ValueError("梁必须基于2根横坐标或纵坐标相同的柱")
-        elif (x1 == x2 and y1 > y2) or (y1 == y2 and x1 > x2):
-            y1, y2 = y2, y1
-            x1, x2 = x2, x1
-            base_zhus[0], base_zhus[1] = base_zhus[1], base_zhus[0]
-        top_z_zhus = min([zhu.z + zhu.height for zhu in founded_zhus])
-        new_code = int_to_code(self.liang_int)
-        self.liang_int += 1
-        self.parts.append(Liang(new_code, x1, x2, y1, y2, top_z_zhus, width, height, in_ext, out_ext, base_zhus))
-        
-        return new_code
-
-    def add_zhu_on_liang(self, inst: str, liang: str, depth: int, height: int, radius: int):
+    def add_zhu_on_liang_1(self, liang: str, depth: int, height: int):
         founded_liang = self.find_part("Liang", liang)
         if founded_liang is None:
-            raise ValueError(f"梁{liang}不存在")
+            raise ValueError(f"未有梁{liang}。")
         (x1, y1, z1), (x2, y2, z2) = founded_liang.endpoints()
         if x1 == x2:
             x = x1
@@ -100,206 +76,238 @@ class Structure:
             y = y1
             x = x1 + depth
         else:
-            raise ValueError("目前只支持横梁与纵梁")
+            raise ValueError("梁需并于横轴。或于纵轴。")
+
         new_code = int_to_code(self.zhu_int)
         self.zhu_int += 1
-        self.parts.append(Zhu(new_code, x, y, z1, height, radius, [liang]))
-        
-        return new_code
-
-    def add_fang_on_zhu(self, inst: str, zhu1: str, zhu2: str, z: int, width: int, height: int, extend: int):
-        founded_zhus = []
-        for zhu in [zhu1, zhu2]:
-            founded_zhu = self.find_part("Zhu", zhu)
-            if founded_zhu is None:
-                raise ValueError(f"柱{zhu}不存在")
-            founded_zhus.append(founded_zhu)
-        x1, y1, z1, h1 = founded_zhus[0].x, founded_zhus[0].y, founded_zhus[0].z, founded_zhus[0].height
-        x2, y2, z2, h2 = founded_zhus[1].x, founded_zhus[1].y, founded_zhus[1].z, founded_zhus[1].height
-        base_zhus = [zhu1, zhu2]
-        if z1 != z2:
-            raise ValueError("枋必须基于2根底部高度相同的柱")
-        if z > min(h1, h2):
-            raise ValueError("枋不能高出两根柱中的任意一根")
-        if x1 != x2 and y1 != y2:
-            raise ValueError("枋必须基于2根横坐标或纵坐标相同的柱")
-        elif (x1 == x2 and y1 > y2) or (y1 == y2 and x1 > x2):
-            y1, y2 = y2, y1
-            x1, x2 = x2, x1
-            base_zhus[0], base_zhus[1] = base_zhus[1], base_zhus[0]
-        new_code = int_to_code(self.fang_int)
-        self.fang_int += 1
-        self.parts.append(Fang(new_code, x1, x2, y1, y2, z1+z, width, height, extend, base_zhus))
-        
-        return new_code
-
-    def add_lin_on_zhu(self, inst: str, zhu1: str, zhu2: str, radius: int, extend: int):
-        founded_zhus = []
-        for zhu in [zhu1, zhu2]:
-            founded_zhu = self.find_part("Zhu", zhu)
-            if founded_zhu is None:
-                raise ValueError(f"柱{zhu}不存在")
-            founded_zhus.append(founded_zhu)
-        x1, y1, z1, h1 = founded_zhus[0].x, founded_zhus[0].y, founded_zhus[0].z, founded_zhus[0].height
-        x2, y2, z2, h2 = founded_zhus[1].x, founded_zhus[1].y, founded_zhus[1].z, founded_zhus[1].height
-        base_zhus = [zhu1, zhu2]
-        if z1+h1 != z2+h2:
-            raise ValueError("檩必须基于2根顶端高度相同的柱")
-        if x1 != x2 and y1 != y2:
-            raise ValueError("檩必须基于2根横坐标或纵坐标相同的柱")
-        elif (x1 == x2 and y1 > y2) or (y1 == y2 and x1 > x2):
-            y1, y2 = y2, y1
-            x1, x2 = x2, x1
-            base_zhus[0], base_zhus[1] = base_zhus[1], base_zhus[0]
-        z = z1+h1
-        new_code = int_to_code(self.lin_int)
-        self.lin_int += 1
-        self.parts.append(Lin(new_code, x1, x2, y1, y2, z, radius, extend, base_zhus, []))
-        
-        return new_code
-
-    def add_jiaoliang_on_zhu(self, inst: str, zhu1:str, zhu2:str, width: int, height: int):
-        founded_zhus = []
-        for zhu in [zhu1, zhu2]:
-            founded_zhu = self.find_part("Zhu", zhu)
-            if founded_zhu is None:
-                raise ValueError(f"柱{zhu}不存在")
-            founded_zhus.append(founded_zhu)
-        base_zhus = [zhu1, zhu2]
-        _, (x1, y1, z1) = founded_zhus[0].endpoints()
-        _, (x2, y2, z2) = founded_zhus[1].endpoints()
-        if z1 <= z2:
-            founded_zhus[0], founded_zhus[1] = founded_zhus[1], founded_zhus[0]
-            base_zhus[0], base_zhus[1] = base_zhus[1], base_zhus[0]
-            _, (x1, y1, z1) = founded_zhus[0].endpoints()
-            _, (x2, y2, z2) = founded_zhus[1].endpoints()
-        if x1 == x2 or y1 == y2:
-            raise ValueError("角梁必须基于2根横纵不相同的柱")
-        
-        new_code = int_to_code(self.jiaoliang_int)
-        self.jiaoliang_int += 1
-        self.parts.append(JiaoLiang(new_code, x1, x2, y1, y2, z1, z2, width, height, base_zhus, []))
-        
-        return new_code
-
-    def add_bianchuan_on_lin(self, inst: str, lin1: str, lin2: str, flag_1: bool, flag_2: bool):
-        founded_lins = []
-        for lin in [lin1, lin2]:
-            founded_lin = self.find_part("Lin", lin)
-            if founded_lin is None:
-                raise ValueError(f"檩{lin}不存在")
-            founded_lins.append(founded_lin)
-        (x1, y1, z1), (x2, y2, z2) = founded_lins[0].endpoints()
-        (x3, y3, z3), (x4, y4, z4) = founded_lins[1].endpoints()
-        new_x1, new_y1, new_z1 = (x1, y1, z1) if flag_1 else (x2, y2, z2)
-        new_x2, new_y2, new_z2 = (x3, y3, z3) if flag_2 else (x4, y4, z4)
-        new_code = int_to_code(self.bianchuan_int)
-        self.bianchuan_int += 1
-        self.parts.append(BianChuan(new_code, new_x1, new_x2, new_y1, new_y2, new_z1, new_z2, [lin1, lin2]))
-        
+        self.parts.append(Zhu(new_code, x, y, z1, height, [liang], []))
         return new_code
     
-    def add_dougong_on_liang(self, inst:str, liang: str, depth:int, dx1:int, dy1:int, dz1:int, dx2:int, dy2:int, dz2:int):
+    def add_zhu_on_gong_1(self, gong: str, in_or_out:str, height: int):
+        founded_gong = self.find_part("Gong", gong)
+        if founded_gong is None:
+            raise ValueError(f"未有栱{gong}。")
+        if in_or_out == "内":
+            _, (x1, y1, z1) = founded_gong.endpoints()
+        else:
+            (x1, y1, z1), _ = founded_gong.endpoints()
+
+        new_code = int_to_code(self.zhu_int)
+        self.zhu_int += 1
+        self.parts.append(Zhu(new_code, x1, y1, z1, height, [], [gong]))
+        return new_code
+
+    def add_liang_on_zhu_2(self, zhu1: str, zhu2: str, in_ext: int, out_ext: int):
+        founded_zhus = []
+        for zhu in [zhu1, zhu2]:
+            founded_zhu = self.find_part("Zhu", zhu)
+            if founded_zhu is None:
+                raise ValueError(f"未有柱{zhu}。")
+            founded_zhus.append(founded_zhu)
+        x1, y1 = founded_zhus[0].x, founded_zhus[0].y
+        x2, y2 = founded_zhus[1].x, founded_zhus[1].y
+        base_zhus = [zhu1, zhu2]
+        if x1 != x2 and y1 != y2:
+            raise ValueError("梁需并于横轴。或于纵轴。")
+        elif (x1 == x2 and y1 > y2) or (y1 == y2 and x1 > x2):
+            y1, y2 = y2, y1
+            x1, x2 = x2, x1
+            base_zhus[0], base_zhus[1] = base_zhus[1], base_zhus[0]
+        top_z_zhus = min([zhu.z + zhu.height for zhu in founded_zhus])
+
+        new_code = int_to_code(self.liang_int)
+        self.liang_int += 1
+        self.parts.append(Liang(new_code, x1, x2, y1, y2, top_z_zhus, in_ext, out_ext, base_zhus))
+        return new_code
+
+    def add_gong_on_liang_1(self, liang: str, depth:int, pos: str, dx1:int, dy1:int, dz1:int, dx2:int, dy2:int, dz2:int):
         founded_liang = self.find_part("Liang", liang)
         if founded_liang is None:
-            raise ValueError(f"梁{liang}不存在")
+            raise ValueError(f"未有梁{liang}。")
         (x1, y1, z1), (x2, y2, z2) = founded_liang.endpoints()
         if x1 == x2:
             y1 = y1 + depth
         elif y1 == y2:
             x1 = x1 + depth
         else:
-            raise ValueError("目前只支持横梁与纵梁")
-        new_code = int_to_code(self.dougong_int)
-        self.dougong_int += 1
-        self.parts.append(DouGong(new_code, x1, y1, z1, x1+dx1, y1+dy1, z1+dz1, x1+dx2, y1+dy2, z1+dz2, [founded_liang]))
+            raise ValueError("梁需并于横轴。或于纵轴。")
+        if pos == "顺":
+            dx1, dy1 = -dx1, -dy1
+        else:
+            dx2, dy1 = -dx2, -dy1
+        
+        new_code = int_to_code(self.gong_int)
+        self.gong_int += 1
+        self.parts.append(Gong(new_code, x1, y1, z1, x1+dx1, y1+dy1, z1+dz1, x1+dx2, y1+dy2, z1+dz2, [founded_liang]))
         
         return new_code
-        
-    def add_lin_on_dougong(self, inst: str, dougong1: str, side1: int, dougong2: str, side2: int, radius:int, extend:int):
-        founded_dougongs = []
-        for dougong in [dougong1, dougong2]:
-            founded_dougong = self.find_part("DouGong", dougong)
-            if founded_dougong is None:
-                raise ValueError(f"柱{dougong}不存在")
-            founded_dougongs.append(founded_dougong)
-        if side1 == 1:
-            x1, y1, z1 = founded_dougongs[0].x1, founded_dougongs[0].y1, founded_dougongs[0].z1
-        else:
-            x1, y1, z1 = founded_dougongs[0].x2, founded_dougongs[0].y2, founded_dougongs[0].z2
-        if side2 == 1:
-            x2, y2, z2 = founded_dougongs[1].x1, founded_dougongs[1].y1, founded_dougongs[1].z1
-        else:
-            x2, y2, z2 = founded_dougongs[1].x2, founded_dougongs[1].y2, founded_dougongs[1].z2
-        base_dougongs = [dougong1, dougong2]
+
+    def add_fang_on_zhu_2(self, zhu1: str, zhu2: str, z: int, in_ext: int, out_ext: int):
+        founded_zhus = []
+        for zhu in [zhu1, zhu2]:
+            founded_zhu = self.find_part("Zhu", zhu)
+            if founded_zhu is None:
+                raise ValueError(f"未有柱{zhu}。")
+            founded_zhus.append(founded_zhu)
+        x1, y1, z1, h1 = founded_zhus[0].x, founded_zhus[0].y, founded_zhus[0].z, founded_zhus[0].height
+        x2, y2, z2, h2 = founded_zhus[1].x, founded_zhus[1].y, founded_zhus[1].z, founded_zhus[1].height
+        base_zhus = [zhu1, zhu2]
         if z1 != z2:
-            raise ValueError("檩必须基于2根顶端高度相同的斗拱")
+            raise ValueError("柱其共枋者。底需同高。")
+        if z > min(h1, h2):
+            raise ValueError("枋不可高出二柱其一。")
         if x1 != x2 and y1 != y2:
-            raise ValueError("檩必须基于2根横坐标或纵坐标相同的柱")
+            raise ValueError("枋需并于横轴。或于纵轴。")
         elif (x1 == x2 and y1 > y2) or (y1 == y2 and x1 > x2):
             y1, y2 = y2, y1
             x1, x2 = x2, x1
-            base_dougongs[0], base_dougongs[1] = base_dougongs[1], base_dougongs[0]
-        z = z1
+            base_zhus[0], base_zhus[1] = base_zhus[1], base_zhus[0]
+        
+        new_code = int_to_code(self.fang_int)
+        self.fang_int += 1
+        self.parts.append(Fang(new_code, x1, x2, y1, y2, z1+z, in_ext, out_ext, base_zhus))
+        return new_code
+
+    def add_lin_on_zhu_2(self, zhu1: str, zhu2: str, extend: int):
+        founded_zhus = []
+        for zhu in [zhu1, zhu2]:
+            founded_zhu = self.find_part("Zhu", zhu)
+            if founded_zhu is None:
+                raise ValueError(f"未有柱{zhu}。")
+            founded_zhus.append(founded_zhu)
+        _, (x1, y1, z1) = founded_zhus[0].endpoints()
+        _, (x2, y2, z2) = founded_zhus[1].endpoints()
+
+        base_zhus = [zhu1, zhu2]
+        if z1 != z2:
+            raise ValueError("檩之始终需同高。故二柱之顶端需同高。")
+        if x1 != x2 and y1 != y2:
+            raise ValueError("檩需并于横轴。或于纵轴。")
+        elif (x1 == x2 and y1 > y2) or (y1 == y2 and x1 > x2):
+            y1, y2 = y2, y1
+            x1, x2 = x2, x1
+            base_zhus[0], base_zhus[1] = base_zhus[1], base_zhus[0]
+
         new_code = int_to_code(self.lin_int)
         self.lin_int += 1
-        self.parts.append(Lin(new_code, x1, x2, y1, y2, z, radius, extend, [], base_dougongs))
-        
+        self.parts.append(Lin(new_code, x1, x2, y1, y2, z1, extend, base_zhus, []))
         return new_code
-    
-    def add_jiaoliang_on_dougong(self, inst: str, dougong:str, width: int, height: int):
-        founded_dougong = self.find_part("DouGong", dougong)
-        if founded_dougong is None:
-            raise ValueError(f"斗拱{dougong}不存在")
-        (x1, y1, z1), (x2, y2, z2) = founded_dougong.tops()
-        if z1 <= z2:
-            x1, y1, z1, x2, y2, z2 = x2, y2, z2, x1, y1, z1
+
+    def add_lin_on_gong_2(self, gong1: str, in_or_out1:str, gong2: str, in_or_out2:str, extend: int):
+        founded_gongs = []
+        for gong in [gong1, gong2]:
+            founded_gong = self.find_part("Gong", gong)
+            if founded_gong is None:
+                raise ValueError(f"未有栱{gong}。")
+            founded_gongs.append(founded_gong)
+        if in_or_out1 == "内":
+            x1, y1, z1 = founded_gongs[0].x1, founded_gongs[0].y1, founded_gongs[0].z1
+        else:
+            x1, y1, z1 = founded_gongs[0].x2, founded_gongs[0].y2, founded_gongs[0].z2
+        if in_or_out2 == "内":
+            x2, y2, z2 = founded_gongs[1].x1, founded_gongs[1].y1, founded_gongs[1].z1
+        else:
+            x2, y2, z2 = founded_gongs[1].x2, founded_gongs[1].y2, founded_gongs[1].z2
+
+        base_gongs = [gong1, gong2]
+        if z1 != z2:
+            raise ValueError("檩之始终需同高。故二栱之顶端需同高。")
+        if x1 != x2 and y1 != y2:
+            raise ValueError("檩需并于横轴。或于纵轴。")
+        elif (x1 == x2 and y1 > y2) or (y1 == y2 and x1 > x2):
+            x1, y1, z1 = x2, y2, z2
+            x2, y2, z2 = x1, y1, z1
+            base_gongs[0], base_gongs[1] = base_gongs[1], base_gongs[0]
         
-        new_code = int_to_code(self.jiaoliang_int)
-        self.jiaoliang_int += 1
-        self.parts.append(JiaoLiang(new_code, x1, x2, y1, y2, z1, z2, width, height, [], [founded_dougong]))
-        
+        new_code = int_to_code(self.lin_int)
+        self.lin_int += 1
+        self.parts.append(Lin(new_code, x1, x2, y1, y2, z1, extend, [], base_gongs))
         return new_code
-    
-    def add_jiaoliang_out_zhu_to_dougong(self, inst: str, zhu:str, dougong:str, side:int, width: int, height: int):
-        founded_dougong = self.find_part("DouGong", dougong)
-        if founded_dougong is None:
-            raise ValueError(f"斗拱{dougong}不存在")
+
+    def add_cao_on_zhu_1(self, zhu: str):
         founded_zhu = self.find_part("Zhu", zhu)
         if founded_zhu is None:
-            raise ValueError(f"柱{zhu}不存在")
+            raise ValueError(f"未有柱{zhu}。")
+        _, (x, y, z) = founded_zhu.endpoints()
+        
+        new_code = int_to_code(self.cao_int)
+        self.cao_int += 1
+        self.parts.append(Cao(new_code, x, y, z, [zhu], []))
+        return new_code
 
-        if side == 1:
-            (x2, y2, z2), _ = founded_dougong.tops()
+    def add_cao_on_gong_1(self, gong: str, in_or_out: str):
+        founded_gong = self.find_part("Gong", gong)
+        if founded_gong is None:
+            raise ValueError(f"未有栱{gong}。")
+        if in_or_out == "内":
+            x, y, z = founded_gong.x1, founded_gong.y1, founded_gong.z1
         else:
-            _, (x2, y2, z2) = founded_dougong.tops()
-        _, (x1, y1, z1) = founded_zhu.endpoints()
-        if z1 <= z2:
-            raise ValueError(f"对于角梁，不接受柱低于斗拱")
+            x, y, z = founded_gong.x2, founded_gong.y2, founded_gong.z2
         
-        new_code = int_to_code(self.jiaoliang_int)
-        self.jiaoliang_int += 1
-        self.parts.append(JiaoLiang(new_code, x1, x2, y1, y2, z1, z2, width, height, [founded_zhu], [founded_dougong]))
+        new_code = int_to_code(self.cao_int)
+        self.cao_int += 1
+        self.parts.append(Cao(new_code, x, y, z, [], [gong]))
+        return new_code
+
+    def add_ji_on_lin_2(self, lin1: str, in_or_out1: str, lin2: str, in_or_out2: str):
+        founded_lins = []
+        for lin in [lin1, lin2]:
+            founded_lin = self.find_part("Lin", lin)
+            if founded_lin is None:
+                raise ValueError(f"未有檩{lin}。")
+            founded_lins.append(founded_lin)
+        base_lins = [lin1, lin2]
+        if in_or_out1 == "内":
+            (x1, y1, z1), _ = founded_lins[0].endpoints()
+        else:
+            _, (x1, y1, z1) = founded_lins[0].endpoints()
+        if in_or_out2 == "内":
+            (x2, y2, z2), _ = founded_lins[1].endpoints()
+        else:
+            _, (x2, y2, z2) = founded_lins[1].endpoints()
+        # if z1 < z2:
+        #     x1, y1, z1, x2, y2, z2 = x2, y2, z2, x1, y1, z1
+        #     base_lins[0], base_lins[1] = base_lins[1], base_lins[0]
+        # elif z1 == z2:
+        #     print(f"置脊于二檩等高者易生错误。请保证相对于建筑主体。前檩{in_or_out1}端位于后檩{in_or_out2}端之内。")
         
+        new_code = int_to_code(self.ji_int)
+        self.ji_int += 1
+        self.parts.append(Ji(new_code, x1, y1, z1, x2, y2, z2, [], [lin1, lin2]))
         return new_code
     
-    def add_fengyan_on_dougong(self, inst:str, dougong1: str, side1: int, dougong2: str, side2: int, width:int, height:int):
-        founded_dougongs = []
-        for dougong in [dougong1, dougong2]:
-            founded_dougong = self.find_part("DouGong", dougong)
-            if founded_dougong is None:
-                raise ValueError(f"柱{dougong}不存在")
-            founded_dougongs.append(founded_dougong)
-        if side1 == 1:
-            (x1, y1, z1), _ = founded_dougongs[0].tops()
-        else:
-            _, (x1, y1, z1) = founded_dougongs[0].tops()
-        if side2 == 1:
-            (x2, y2, z2), _ = founded_dougongs[1].tops()
-        else:
-            _, (x2, y2, z2) = founded_dougongs[1].tops()
-        new_code = int_to_code(self.fengyan_int)
-        self.fengyan_int += 1
-        self.parts.append(FengYan(new_code, x1, x2, y1, y2, z1, z2, width, height, [dougong1, dougong2]))
+    def add_ji_on_cao_2(self, cao1: str, cao2: str):
+        founded_caos = []
+        for cao in [cao1, cao2]:
+            founded_cao = self.find_part("Cao", cao)
+            if founded_cao is None:
+                raise ValueError(f"未有檩{cao}。")
+            founded_caos.append(founded_cao)
+        base_caos = [cao1, cao2]
+        x1, y1, z1 = founded_caos[0].x1, founded_caos[0].y1, founded_caos[0].z1
+        x2, y2, z2 = founded_caos[1].x1, founded_caos[1].y1, founded_caos[1].z1
+        # if z1 < z2:
+        #     x1, y1, z1, x2, y2, z2 = x2, y2, z2, x1, y1, z1
+        #     base_caos[0], base_caos[1] = base_caos[1], base_caos[0]
+        # elif z1 == z2:
+        #     print("置脊于二槽等高者易生错误。请保证相对于建筑主体。前槽位于后槽之内。")
         
+        new_code = int_to_code(self.ji_int)
+        self.ji_int += 1
+        self.parts.append(Ji(new_code, x1, y1, z1, x2, y2, z2, [cao1, cao2], []))
+        return new_code
+
+    def add_yan_on_ji_2(self, ji1: str, ji2: str):
+        founded_ji = []
+        for ji in [ji1, ji2]:
+            founded_ji.append(self.find_part("Ji", ji))
+        if None in founded_ji:
+            raise ValueError(f"未有脊{ji1}或{ji2}。")
+
+        _, (x1, y1, z1) = founded_ji[0].endpoints()
+        _, (x2, y2, z2) = founded_ji[1].endpoints()
+        
+        new_code = int_to_code(self.yan_int)
+        self.yan_int += 1
+        self.parts.append(Yan(new_code, x1, y1, z1, x2, y2, z2, [ji1, ji2]))
         return new_code
