@@ -19,6 +19,9 @@ help_str = """每指令一行。全角句号自动忽略。
 置脊于槽<码>至槽<码>
 置檐于脊<码>至脊<码>
 
+调整视角:
+观于径<数>寸俯<数>度侧<数>度
+
 退出程序: Ctrl + C
 
 显示本帮助: 
@@ -49,6 +52,7 @@ def parse_one_line(structure: Structure, line: str) -> tuple[bool, str]:
         "示形": (r"示形", ),
         "显轴": (r"显轴", ),
         "释": (r"释", ), 
+        "观": (r"观于径([" + all_in_number + r"]+)寸俯([" + all_in_number + r"]+)度侧([" + all_in_number + r"]+)度", ),
     }
 
     re_str = re_dict["释"][0]
@@ -66,6 +70,18 @@ def parse_one_line(structure: Structure, line: str) -> tuple[bool, str]:
     match = re.match(re_str, line)
     if match:
         structure.show_ref = not structure.show_ref
+        return True, "设置成功"
+    
+    re_str = re_dict["观"][0]
+    match = re.match(re_str, line)
+    if match:
+        r, phi, theta = match.groups()
+        try:
+            r, phi, theta = number_to_int_batch((r, phi, theta))
+        except ValueError as e:
+            return False, str(e)
+        # 合法指令
+        structure.view_pos = [r, phi, theta]
         return True, "设置成功"
     
     re_str = re_dict["置柱于地"][0]

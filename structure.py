@@ -1,6 +1,6 @@
 from parts import Zhu, Liang, Gong, Lin, Fang, Cao, Ji, Yan
 from numbering import int_to_code
-import pyvista as pv
+import matplotlib.pyplot as plt
 import numpy as np
 
 class Structure:
@@ -16,9 +16,8 @@ class Structure:
         self.cao_int = 0
         self.ji_int = 0
         self.yan_int = 0
-        self.position = [(2000, -2000, 2000), (0, 1000, 0)]
         self.show_ref = False
-        self.plotter = pv.Plotter()
+        self.view_pos = [1000, 30, 30]
 
         with open(save_path, "r", encoding="utf-8") as f:
             for line in f:
@@ -27,25 +26,28 @@ class Structure:
                     self.insts.append(line)
 
     def render(self):
+        self.fig = plt.figure(figsize=(10, 8))
+        self.ax = self.fig.add_subplot(111, projection='3d')
+        if not self.show_ref:
+            self.ax.set_axis_off()
         lines = [p.endpoints() for p in self.parts if not isinstance(p, Gong) and not isinstance(p, Cao)]
         for p in self.parts: 
             if isinstance(p, Gong):
                 lines += p.endpoint_list()
-        # print(lines)
 
         for start, end in lines:
             points = np.array([start, end])
-            line = pv.lines_from_points(points)
-            self.plotter.add_mesh(line, color='black', line_width=3)
-        
-        if self.show_ref:
-            self.plotter.add_mesh(pv.lines_from_points(np.array([(0, 0, 0), (0, 0, 500)])), color='red', line_width=3)
-            self.plotter.add_mesh(pv.lines_from_points(np.array([(0, 0, 0), (0, 500, 0)])), color='blue', line_width=3)
-            self.plotter.add_mesh(pv.lines_from_points(np.array([(0, 0, 0), (500, 0, 0)])), color='green', line_width=3)
+            self.ax.plot(points[:, 0], points[:, 1], points[:, 2], color='black', linewidth=3)
 
-        position, focus = self.position
-        self.plotter.camera_position = [position, focus, (0,0,1)]
-        self.plotter.show()
+        self.ax.view_init(elev=self.view_pos[1], azim=self.view_pos[2])  
+        max_range = self.view_pos[0]
+        self.ax.set_xlim([0, max_range])
+        self.ax.set_ylim([0, max_range])
+        self.ax.set_zlim([0, max_range])
+        
+        # 保存图片
+        plt.tight_layout()
+        plt.savefig(f'{self.save_path.split(".")[0]}.png', dpi=300, bbox_inches='tight')
 
     def dump_insts(self):
         insts = "\n".join(self.insts)
