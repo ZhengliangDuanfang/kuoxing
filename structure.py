@@ -1,5 +1,6 @@
 from parts import Zhu, Liang, Gong, Lin, Fang, Cao, Ji, Yan
 from numbering import int_to_code
+import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -24,6 +25,8 @@ class Structure:
                 line = line.strip()
                 if line and len(line) > 0:
                     self.insts.append(line)
+        
+        matplotlib.use('Agg')
 
     def render(self):
         self.fig = plt.figure(figsize=(10, 8))

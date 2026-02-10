@@ -5,6 +5,7 @@ from numbering import all_in_number, all_in_code, number_to_int, int_to_code, co
 help_str = """每指令一行。全角句号自动忽略。
 
 添加构件: 
+```
 置柱于地横<数>寸纵<数>寸高<数>寸
 置柱于梁<码>深<数>寸高<数>寸
 置柱于栱<码>(内|外)高<数>寸
@@ -18,14 +19,24 @@ help_str = """每指令一行。全角句号自动忽略。
 置脊于檩<码>(内|外)至檩<码>(内|外)
 置脊于槽<码>至槽<码>
 置檐于脊<码>至脊<码>
+```
+- `<码>`以天干地支形式，见于添加成功提示。
+- `<数>`应以「一百二十有三」形式。
+- `(甲|乙)`意为二选一即可。
+- 「内」「外」以横纵轴坐标区分构件端侧。
 
-调整视角:
+调整视角: 
+```
 观于径<数>寸俯<数>度侧<数>度
-
-退出程序: Ctrl + C
-
+```
+显示/关闭坐标轴：
+```
+显/隐轴
+```
 显示本帮助: 
-释"""
+```
+释
+```"""
 
 def parse_one_line(structure: Structure, line: str) -> tuple[bool, str]:
     line = re.sub(r'\s+', '', line)
@@ -49,27 +60,23 @@ def parse_one_line(structure: Structure, line: str) -> tuple[bool, str]:
         "置脊于槽二": (r"置脊于槽([" + all_in_code + r"]+)至槽([" + all_in_code + r"]+)", ),
         "置檐于脊二": (r"置檐于脊([" + all_in_code + r"]+)至脊([" + all_in_code + r"]+)", ),
         
-        "示形": (r"示形", ),
         "显轴": (r"显轴", ),
-        "释": (r"释", ), 
+        "隐轴": (r"隐轴", ),
         "观": (r"观于径([" + all_in_number + r"]+)寸俯([" + all_in_number + r"]+)度侧([" + all_in_number + r"]+)度", ),
     }
-
-    re_str = re_dict["释"][0]
-    match = re.match(re_str, line)
-    if match:
-        return True, help_str
-
-    re_str = re_dict["示形"][0]
-    match = re.match(re_str, line)
-    if match:
-        structure.render()
-        return True, "显示成功"
     
     re_str = re_dict["显轴"][0]
     match = re.match(re_str, line)
     if match:
-        structure.show_ref = not structure.show_ref
+        structure.show_ref = True
+        structure.render()
+        return True, "设置成功"
+
+    re_str = re_dict["隐轴"][0]
+    match = re.match(re_str, line)
+    if match:
+        structure.show_ref = False
+        structure.render()
         return True, "设置成功"
     
     re_str = re_dict["观"][0]
