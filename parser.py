@@ -44,31 +44,60 @@ def parse_one_line(structure: Structure, line: str) -> tuple[bool, str]:
     # print(f"输入：{line}")
 
     re_dict = {
+        # 基础结构
         "置柱于地": (r"置柱于地横([" + all_in_number + r"]+)寸纵([" + all_in_number + r"]+)寸高([" + all_in_number + r"]+)寸", ),
         "置柱于梁一": (r"置柱于梁([" + all_in_code + r"]+)深([" + all_in_number + r"]+)寸高([" + all_in_number + r"]+)寸", ),
         "置柱于栱一": (r"置柱于栱(内|外)([" + all_in_code + r"]+)高([" + all_in_number + r"]+)寸", ),
         "置梁于柱二": (r"置梁于柱([" + all_in_code + r"]+)至柱([" + all_in_code + r"]+)内延([" + all_in_number + r"]+)寸外延([" + all_in_number + r"]+)寸", ),
         "置栱于梁一": (r"置栱于梁([" + all_in_code + r"]+)深([" + all_in_number + r"]+)寸(顺|逆)内横([" + all_in_number + r"]+)寸纵([" + all_in_number + r"]+)寸高([" + all_in_number + r"]+)寸外横([" + all_in_number + r"]+)寸纵([" + all_in_number + r"]+)寸高([" + all_in_number + r"]+)寸", ),
         "置枋于柱二": (r"置枋于柱([" + all_in_code + r"]+)至柱([" + all_in_code + r"]+)起([" + all_in_number + r"]+)寸内延([" + all_in_number + r"]+)寸外延([" + all_in_number + r"]+)寸", ),
-
+        # 屋面结构
         "置檩于柱二": (r"置檩于柱([" + all_in_code + r"]+)至柱([" + all_in_code + r"]+)延([" + all_in_number + r"]+)寸", ),
         "置檩于栱二": (r"置檩于栱([" + all_in_code + r"]+)(内|外)至栱([" + all_in_code + r"]+)(内|外)延([" + all_in_number + r"]+)寸",),
-        
         "置点于柱一": (r"置点于柱([" + all_in_code + r"]+)", ),
         "置点于栱一": (r"置点于栱([" + all_in_code + r"]+)(内|外)", ),
         "置点于檩一": (r"置点于檩([" + all_in_code + r"]+)(内|外)", ),
         "置点于空": (r"置点于横([" + all_in_number + r"]+)寸纵([" + all_in_number + r"]+)寸高([" + all_in_number + r"]+)寸", ),
         "置顶于点三": (r"置顶于点([" + all_in_code + r"]+)至点([" + all_in_code + r"]+)及点([" + all_in_code + r"]+)", ),
         "置顶于点四": (r"置顶于点([" + all_in_code + r"]+)及点([" + all_in_code + r"]+)至点([" + all_in_code + r"]+)及点([" + all_in_code + r"]+)", ),
-        
+        "起顶": (r"起顶以([" + all_in_number + r"]+)寸", ),
+        # 一般显示设置
         "显轴": (r"显轴", ),
         "隐轴": (r"隐轴", ),
         "观于": (r"观于径([" + all_in_number + r"]+)寸俯([" + all_in_number + r"]+)度侧([" + all_in_number + r"]+)度", ),
         "观处": (r"观处", ),
         "皆示": (r"示(["+ "".join(part_map.keys()) + r"])以(["+ "".join(color_map.keys()) + r"])", ),
         "示": (r"示(["+ "".join(part_map.keys()) + r"])([" + all_in_code + r"]+)以(["+ "".join(color_map.keys()) + r"])", ),
-        "起顶": (r"起顶以([" + all_in_number + r"]+)寸", ),
+        # 渲染显示设置
+        "显顶边": (r"显顶边", ),
+        "隐顶边": (r"隐顶边", ),
+        "显顶面": (r"显顶面", ),
+        "虚顶面": (r"虚顶面", ),
     }
+
+    re_str = re_dict["显顶边"][0]
+    match = re.match(re_str, line)
+    if match:
+        structure.show_ding_egde = True
+        return True, "设置成功"
+
+    re_str = re_dict["隐顶边"][0]
+    match = re.match(re_str, line)
+    if match:
+        structure.show_ding_egde = False
+        return True, "设置成功"
+
+    re_str = re_dict["显顶面"][0]
+    match = re.match(re_str, line)
+    if match:
+        structure.show_ding_transparent = False
+        return True, "设置成功"
+
+    re_str = re_dict["虚顶面"][0]
+    match = re.match(re_str, line)
+    if match:
+        structure.show_ding_transparent = True
+        return True, "设置成功"
 
     re_str = re_dict["起顶"][0]
     match = re.match(re_str, line)
@@ -109,14 +138,12 @@ def parse_one_line(structure: Structure, line: str) -> tuple[bool, str]:
     match = re.match(re_str, line)
     if match:
         structure.show_ref = True
-        structure.render()
         return True, "设置成功"
 
     re_str = re_dict["隐轴"][0]
     match = re.match(re_str, line)
     if match:
         structure.show_ref = False
-        structure.render()
         return True, "设置成功"
     
     re_str = re_dict["观于"][0]

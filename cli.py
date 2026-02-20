@@ -21,6 +21,7 @@ if __name__ == "__main__":
             if success:
                 structure.insts.append(line)
                 structure.dump_insts()
+                structure.render()
             print(result)
     elif len(sys.argv) == 2 and os.path.isfile(sys.argv[1]):
         structure = Structure(sys.argv[1])

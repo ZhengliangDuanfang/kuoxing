@@ -4,9 +4,8 @@ all_in_number = "零一二三四五六七八九〇壹两贰叁肆伍陆柒捌玖
 odd_in_code = "甲乙丙丁戊己庚辛壬癸"
 even_in_code = "子丑寅卯辰巳午未申酉戌亥"
 all_in_code = odd_in_code + even_in_code
-part_map = {"柱": "Zhu", "梁": "Liang", "栱": "Gong", "枋": "Fang", "檩": "Lin", "顶": "Ding"}
-color_map = {"赤": "#ff4500", "橙": "#ff8c00", "黄": "#ffd700", "绿": "#adff2f", "青": "#00f0f0", "蓝": "#1e90ff", "紫": "#ee82ee", "黛": "#008080", "棕": "#a52a2a", "黑": "black"}
-# color_map = {"蓝": "blue", "紫": "magenta", "青": "cyan", "绿": "green", "黄": "yellow", "赤": "red", "黑": "black", "白": "white"}
+part_map = {"柱": "Zhu", "梁": "Liang", "栱": "Gong", "枋": "Fang", "檩": "Lin", "点": "Dian", "顶": "Ding"}
+color_map = {"朱": "#ff4500", "橙": "#ff8c00", "黄": "#ffd700", "绿": "#adff2f", "青": "#00f0f0", "蓝": "#1e90ff", "紫": "#ee82ee", "黛": "#008080", "棕": "#a52a2a", "黑": "black"}
 
 def number_to_int(text):
     """

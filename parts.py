@@ -146,6 +146,9 @@ class Dian(Part):
         self.base_gong = base_gong
         self.base_lin = base_lin
         self.color = "black"
+    
+    def endpoint(self):
+        return (self.x1, self.y1, self.z1)
 
 class Ding(Part):
     def __init__(self, code: str, base_dian: list[str], pos_list: list[tuple[int, int, int]]):
@@ -158,13 +161,10 @@ class Ding(Part):
         self.pos_list = pos_list
         self.color = "black"
     
-    def endpoint_list_with_color(self):
-        epl = []
+    def triangle_list_with_color(self):
         if len(self.pos_list) == 3:
-            epl += [(self.pos_list[0], self.pos_list[1]), (self.pos_list[1], self.pos_list[2]), (self.pos_list[2], self.pos_list[0])]
+            return [(self.color, self.pos_list[0], self.pos_list[1], self.pos_list[2])]
         elif len(self.pos_list) == 4:
-            epl += [(self.pos_list[0], self.pos_list[1]), (self.pos_list[2], self.pos_list[3]), (self.pos_list[0], self.pos_list[2]), (self.pos_list[1], self.pos_list[3])]
-        if len(epl) == 0:
+            return [(self.color, self.pos_list[0], self.pos_list[1], self.pos_list[2]), (self.color, self.pos_list[1], self.pos_list[2], self.pos_list[3])]
+        else:
             raise ValueError("顶未连接任何点。此程序之失也，请报告之。")
-        epl = [(self.color, ep) for ep in epl]
-        return epl

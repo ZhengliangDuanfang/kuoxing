@@ -20,6 +20,8 @@ class Structure:
         self.view_pos = [1000, 30, 30]
         self.linewidth = 3
         self.ding_up = 3
+        self.show_ding_egde = False
+        self.show_ding_transparent = True
 
         with open(save_path, "r", encoding="utf-8") as f:
             for line in f:
@@ -33,18 +35,30 @@ class Structure:
         self.ax = self.fig.add_subplot(111, projection='3d')
         if not self.show_ref:
             self.ax.set_axis_off()
+        
         lines = [(p.color, p.endpoints()) for p in self.parts if not (isinstance(p, Gong) or isinstance(p, Dian) or isinstance(p, Ding))]
         for p in self.parts: 
             if isinstance(p, Gong):
                 lines += p.endpoint_list_with_color()
-            elif isinstance(p, Ding):
-                line_list = p.endpoint_list_with_color()
-                for color, (start, end) in line_list:
-                    lines.append((color, ((start[0], start[1], start[2]+self.ding_up), (end[0], end[1], end[2]+self.ding_up))))
-
         for color, (start, end) in lines:
             points = np.array([start, end])
             self.ax.plot(points[:, 0], points[:, 1], points[:, 2], color=color, linewidth=self.linewidth)
+
+        for p in self.parts: 
+            if isinstance(p, Dian):
+                endpoint = p.endpoint()
+                self.ax.scatter(endpoint[0], endpoint[1], endpoint[2], color=p.color, s=self.linewidth*10, marker='.')
+
+        transparency = 0.5 if self.show_ding_transparent else 1
+        edgecolor = "black" if self.show_ding_egde else "none"
+        for p in self.parts: 
+            if isinstance(p, Ding):
+                line_list = p.triangle_list_with_color()
+                for color, p1, p2, p3 in line_list:
+                    x = np.array([p1[0], p2[0], p3[0]])
+                    y = np.array([p1[1], p2[1], p3[1]])
+                    z = np.array([p1[2]+self.ding_up, p2[2]+self.ding_up, p3[2]+self.ding_up])
+                    self.ax.plot_trisurf(x, y, z, alpha=transparency, color=color, edgecolor=edgecolor)
 
         self.ax.view_init(elev=self.view_pos[1], azim=self.view_pos[2])  
         max_range = self.view_pos[0]
