@@ -19,7 +19,7 @@ class Structure:
         self.show_ref = False
         self.view_pos = [1000, 30, 30]
         self.linewidth = 3
-        self.ding_up = 3
+        self.ding_up = 10
         self.show_ding_egde = False
         self.show_ding_transparent = True
 
@@ -165,7 +165,7 @@ class Structure:
         
         return new_code
 
-    def add_fang_on_zhu_2(self, zhu1: str, zhu2: str, z: int, in_ext: int, out_ext: int):
+    def add_fang_on_zhu_2(self, zhu1: str, zhu2: str, dz1: int, dz2: int, in_ext: int, out_ext: int):
         founded_zhus = []
         for zhu in [zhu1, zhu2]:
             founded_zhu = self.find_part("Zhu", zhu)
@@ -175,9 +175,10 @@ class Structure:
         x1, y1, z1, h1 = founded_zhus[0].x, founded_zhus[0].y, founded_zhus[0].z, founded_zhus[0].height
         x2, y2, z2, h2 = founded_zhus[1].x, founded_zhus[1].y, founded_zhus[1].z, founded_zhus[1].height
         base_zhus = [zhu1, zhu2]
-        if z1 != z2:
+        if z1 + dz1 != z2 + dz2:
             raise ValueError("柱其共枋者。底需同高。")
-        if z > min(h1, h2):
+        z = z1 + dz1
+        if z > min(z1 + h1, z2 + h2):
             raise ValueError("枋不可高出二柱其一。")
         if x1 != x2 and y1 != y2:
             raise ValueError("枋需并于横轴。或于纵轴。")
@@ -188,7 +189,28 @@ class Structure:
         
         new_code = int_to_code(self.fang_int)
         self.fang_int += 1
-        self.parts.append(Fang(new_code, x1, x2, y1, y2, z1+z, in_ext, out_ext, base_zhus))
+        self.parts.append(Fang(new_code, x1, x2, y1, y2, z, in_ext, out_ext, base_zhus))
+        return new_code
+
+    def add_chui_on_liang_1(self, liang: str, depth: int, height: int, lower: int):
+        founded_liang = self.find_part("Liang", liang)
+        if founded_liang is None:
+            raise ValueError(f"未有梁{liang}。")
+        (x1, y1, z1), (x2, y2, z2) = founded_liang.endpoints()
+        if x1 == x2:
+            x = x1
+            y = y1 + depth
+        elif y1 == y2:
+            y = y1
+            x = x1 + depth
+        else:
+            raise ValueError("梁需并于横轴。或于纵轴。")
+        if z1 <= lower:
+            raise ValueError("垂花柱不可触于地。")
+        z = z1 - lower
+        new_code = int_to_code(self.zhu_int)
+        self.zhu_int += 1
+        self.parts.append(Zhu(new_code, x, y, z, height+lower, [liang], []))
         return new_code
 
     def add_lin_on_zhu_2(self, zhu1: str, zhu2: str, extend: int):

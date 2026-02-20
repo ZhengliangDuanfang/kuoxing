@@ -50,7 +50,8 @@ def parse_one_line(structure: Structure, line: str) -> tuple[bool, str]:
         "置柱于栱一": (r"置柱于栱(内|外)([" + all_in_code + r"]+)高([" + all_in_number + r"]+)寸", ),
         "置梁于柱二": (r"置梁于柱([" + all_in_code + r"]+)至柱([" + all_in_code + r"]+)内延([" + all_in_number + r"]+)寸外延([" + all_in_number + r"]+)寸", ),
         "置栱于梁一": (r"置栱于梁([" + all_in_code + r"]+)深([" + all_in_number + r"]+)寸(顺|逆)内横([" + all_in_number + r"]+)寸纵([" + all_in_number + r"]+)寸高([" + all_in_number + r"]+)寸外横([" + all_in_number + r"]+)寸纵([" + all_in_number + r"]+)寸高([" + all_in_number + r"]+)寸", ),
-        "置枋于柱二": (r"置枋于柱([" + all_in_code + r"]+)至柱([" + all_in_code + r"]+)起([" + all_in_number + r"]+)寸内延([" + all_in_number + r"]+)寸外延([" + all_in_number + r"]+)寸", ),
+        "置枋于柱二": (r"置枋于柱([" + all_in_code + r"]+)起([" + all_in_number + r"]+)寸至柱([" + all_in_code + r"]+)起([" + all_in_number + r"]+)寸内延([" + all_in_number + r"]+)寸外延([" + all_in_number + r"]+)寸", ),
+        "置垂花柱于梁一": (r"置垂花柱于梁([" + all_in_code + r"]+)深([" + all_in_number + r"]+)寸高([" + all_in_number + r"]+)寸垂([" + all_in_number + r"]+)寸", ),
         # 屋面结构
         "置檩于柱二": (r"置檩于柱([" + all_in_code + r"]+)至柱([" + all_in_code + r"]+)延([" + all_in_number + r"]+)寸", ),
         "置檩于栱二": (r"置檩于栱([" + all_in_code + r"]+)(内|外)至栱([" + all_in_code + r"]+)(内|外)延([" + all_in_number + r"]+)寸",),
@@ -68,12 +69,25 @@ def parse_one_line(structure: Structure, line: str) -> tuple[bool, str]:
         "观处": (r"观处", ),
         "皆示": (r"示(["+ "".join(part_map.keys()) + r"])以(["+ "".join(color_map.keys()) + r"])", ),
         "示": (r"示(["+ "".join(part_map.keys()) + r"])([" + all_in_code + r"]+)以(["+ "".join(color_map.keys()) + r"])", ),
+        "设构径": (r"设构径([" + all_in_number + r"]+)寸", ),
         # 渲染显示设置
         "显顶边": (r"显顶边", ),
         "隐顶边": (r"隐顶边", ),
         "显顶面": (r"显顶面", ),
         "虚顶面": (r"虚顶面", ),
     }
+
+    re_str = re_dict["设构径"][0]
+    match = re.match(re_str, line)
+    if match:
+        r = match.groups()[0]
+        try:
+            r = number_to_int_batch((r,))[0]
+        except ValueError as e:
+            return False, str(e)
+        # 合法指令
+        structure.linewidth = r
+        return True, "设置成功"
 
     re_str = re_dict["显顶边"][0]
     match = re.match(re_str, line)
@@ -248,18 +262,36 @@ def parse_one_line(structure: Structure, line: str) -> tuple[bool, str]:
     re_str = re_dict["置枋于柱二"][0]
     match = re.match(re_str, line)
     if match:
-        zhu1, zhu2, dz, in_ext, out_ext = match.groups()
+        zhu1, dz1, zhu2, dz2, in_ext, out_ext = match.groups()
         try_code_result = try_code_to_int_batch((zhu1, zhu2))
         if try_code_result != "":
             return False, try_code_result
         try:
-            dz, in_ext, out_ext = number_to_int_batch((dz, in_ext, out_ext))
+            dz1, dz2, in_ext, out_ext = number_to_int_batch((dz1, dz2, in_ext, out_ext))
         except ValueError as e:
             return False, str(e)
         # 合法指令
         try:
-            code = structure.add_fang_on_zhu_2(zhu1, zhu2, dz, in_ext, out_ext)
+            code = structure.add_fang_on_zhu_2(zhu1, zhu2, dz1, dz2, in_ext, out_ext)
             return True, f"置枋{code}"
+        except ValueError as e:
+            return False, str(e)
+    
+    re_str = re_dict["置垂花柱于梁一"][0]
+    match = re.match(re_str, line)
+    if match:
+        liang1, deep, height, lower = match.groups()
+        try_code_result = try_code_to_int_batch((liang1,))
+        if try_code_result != "":
+            return False, try_code_result
+        try:
+            deep, height, lower = number_to_int_batch((deep, height, lower))
+        except ValueError as e:
+            return False, str(e)
+        # 合法指令
+        try:
+            code = structure.add_chui_on_liang_1(liang1, deep, height, lower)
+            return True, f"置柱{code}"
         except ValueError as e:
             return False, str(e)
 
