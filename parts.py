@@ -17,6 +17,7 @@ class Zhu(Part):
         self.height = height
         self.base_liang = base_liang
         self.base_gong = base_gong
+        self.color = "black"
     
     def endpoints(self):
         return (self.x, self.y, self.z), (self.x, self.y, self.z + self.height)
@@ -40,6 +41,7 @@ class Liang(Part):
         self.ext1 = ext1
         self.ext2 = ext2
         self.base_zhu = base_zhu
+        self.color = "black"
 
     def endpoints(self):
         if self.x1 == self.x2:
@@ -66,11 +68,12 @@ class Gong(Part):
         self.y2 = y2
         self.z2 = z2
         self.base_liang = base_liang
+        self.color = "black"
     
     def tops(self):
         return (self.x1, self.y1, self.z1), (self.x2, self.y2, self.z2)
     
-    def endpoint_list(self):
+    def endpoint_list_with_color(self):
         return [((self.x1, self.y1, self.z1), (self.x0, self.y0, self.z0)), ((self.x0, self.y0, self.z0), (self.x2, self.y2, self.z2))]
 
 class Fang(Part):
@@ -93,6 +96,7 @@ class Fang(Part):
         self.ext1 = ext1
         self.ext2 = ext2
         self.base_zhu = base_zhu
+        self.color = "black"
     
     def endpoints(self):
         if self.x1 == self.x2:
@@ -120,6 +124,7 @@ class Lin(Part):
         self.z = z
         self.extend = extend
         self.base_zhu = base_zhu
+        self.color = "black"
     
     def endpoints(self):
         if self.x1 == self.x2:
@@ -140,6 +145,7 @@ class Dian(Part):
         self.base_zhu = base_zhu
         self.base_gong = base_gong
         self.base_lin = base_lin
+        self.color = "black"
 
 class Ding(Part):
     def __init__(self, code: str, base_dian: list[str], pos_list: list[tuple[int, int, int]]):
@@ -150,8 +156,9 @@ class Ding(Part):
         super().__init__(code)
         self.base_dian = base_dian
         self.pos_list = pos_list
+        self.color = "black"
     
-    def endpoint_list(self):
+    def endpoint_list_with_color(self):
         epl = []
         if len(self.pos_list) == 3:
             epl += [(self.pos_list[0], self.pos_list[1]), (self.pos_list[1], self.pos_list[2]), (self.pos_list[2], self.pos_list[0])]
@@ -159,4 +166,5 @@ class Ding(Part):
             epl += [(self.pos_list[0], self.pos_list[1]), (self.pos_list[2], self.pos_list[3]), (self.pos_list[0], self.pos_list[2]), (self.pos_list[1], self.pos_list[3])]
         if len(epl) == 0:
             raise ValueError("顶未连接任何点。此程序之失也，请报告之。")
+        epl = [(self.color, ep) for ep in epl]
         return epl

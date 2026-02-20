@@ -1,6 +1,6 @@
 import re
 from structure import Structure
-from numbering import all_in_number, all_in_code, number_to_int, int_to_code, code_to_int, try_code_to_int_batch, number_to_int_batch
+from numbering import all_in_number, all_in_code, part_map, color_map, try_code_to_int_batch, number_to_int_batch
 
 help_str = """每指令一行。全角句号自动忽略。
 
@@ -14,11 +14,11 @@ help_str = """每指令一行。全角句号自动忽略。
 置枋于柱<码>至柱<码>起<数>寸宽<数>寸高<数>寸内延<数>寸外延<数>寸
 置檩于柱<码>至柱<码>延<数>寸
 置檩于栱<码>(内|外)至栱<码>(内|外)延<数>寸
-置槽于柱<码>
-置槽于栱<码>(内|外)
-置脊于檩<码>(内|外)至檩<码>(内|外)
-置脊于槽<码>至槽<码>
-置檐于脊<码>至脊<码>
+置点于柱<码>
+置点于栱<码>(内|外)
+置点于檩<码>(内|外)
+置顶于点<码>至点<码>及点<码>
+置顶于点<码>及点<码>至点<码>及点<码>
 ```
 - `<码>`以天干地支形式，见于添加成功提示。
 - `<数>`应以「一百二十有三」形式，接受从零到九百九十有九的范围。
@@ -63,8 +63,47 @@ def parse_one_line(structure: Structure, line: str) -> tuple[bool, str]:
         
         "显轴": (r"显轴", ),
         "隐轴": (r"隐轴", ),
-        "观": (r"观于径([" + all_in_number + r"]+)寸俯([" + all_in_number + r"]+)度侧([" + all_in_number + r"]+)度", ),
+        "观于": (r"观于径([" + all_in_number + r"]+)寸俯([" + all_in_number + r"]+)度侧([" + all_in_number + r"]+)度", ),
+        "观处": (r"观处", ),
+        "皆示": (r"示(["+ "".join(part_map.keys()) + r"])以(["+ "".join(color_map.keys()) + r"])", ),
+        "示": (r"示(["+ "".join(part_map.keys()) + r"])([" + all_in_code + r"]+)以(["+ "".join(color_map.keys()) + r"])", ),
+        "起顶": (r"起顶以([" + all_in_number + r"]+)寸", ),
     }
+
+    re_str = re_dict["起顶"][0]
+    match = re.match(re_str, line)
+    if match:
+        up = match.groups()[0]
+        try:
+            up = number_to_int_batch((up,))[0]
+        except ValueError as e:
+            return False, str(e)
+        # 合法指令
+        structure.ding_up = up
+        return True, "设置成功"
+
+    re_str = re_dict["示"][0]
+    match = re.match(re_str, line)
+    if match:
+        part, code, color = match.groups()
+        try_code_result = try_code_to_int_batch((code,))
+        if try_code_result != "":
+            return False, try_code_result
+        if part not in part_map.keys():
+            return False, f"未知构件类型{part}"
+        # 合法指令
+        structure.set_color(part_map[part], code, color_map[color])
+        return True, "设置成功"
+    
+    re_str = re_dict["皆示"][0]
+    match = re.match(re_str, line)
+    if match:
+        part, color = match.groups()
+        if part not in part_map.keys():
+            return False, f"未知构件类型{part}"
+        # 合法指令
+        structure.set_colors(part_map[part], color_map[color])
+        return True, "设置成功"
     
     re_str = re_dict["显轴"][0]
     match = re.match(re_str, line)
@@ -80,7 +119,7 @@ def parse_one_line(structure: Structure, line: str) -> tuple[bool, str]:
         structure.render()
         return True, "设置成功"
     
-    re_str = re_dict["观"][0]
+    re_str = re_dict["观于"][0]
     match = re.match(re_str, line)
     if match:
         r, phi, theta = match.groups()
@@ -320,7 +359,7 @@ def parse_one_line(structure: Structure, line: str) -> tuple[bool, str]:
 
     for inst in re_dict.keys():
         if inst in line:
-            return False, f"{inst} 是有效指令，但缺少参数"
+            return False, f"{inst} 是有效指令，但缺少参数或格式错误"
 
     return False, "未匹配到指令"
 

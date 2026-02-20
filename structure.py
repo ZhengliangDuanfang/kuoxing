@@ -18,6 +18,8 @@ class Structure:
         self.ding_int = 0
         self.show_ref = False
         self.view_pos = [1000, 30, 30]
+        self.linewidth = 3
+        self.ding_up = 3
 
         with open(save_path, "r", encoding="utf-8") as f:
             for line in f:
@@ -31,14 +33,18 @@ class Structure:
         self.ax = self.fig.add_subplot(111, projection='3d')
         if not self.show_ref:
             self.ax.set_axis_off()
-        lines = [p.endpoints() for p in self.parts if not isinstance(p, Gong) and not isinstance(p, Dian) and not isinstance(p, Ding)]
+        lines = [(p.color, p.endpoints()) for p in self.parts if not (isinstance(p, Gong) or isinstance(p, Dian) or isinstance(p, Ding))]
         for p in self.parts: 
-            if isinstance(p, Gong) or isinstance(p, Ding):
-                lines += p.endpoint_list()
+            if isinstance(p, Gong):
+                lines += p.endpoint_list_with_color()
+            elif isinstance(p, Ding):
+                line_list = p.endpoint_list_with_color()
+                for color, (start, end) in line_list:
+                    lines.append((color, ((start[0], start[1], start[2]+self.ding_up), (end[0], end[1], end[2]+self.ding_up))))
 
-        for start, end in lines:
+        for color, (start, end) in lines:
             points = np.array([start, end])
-            self.ax.plot(points[:, 0], points[:, 1], points[:, 2], color='black', linewidth=3)
+            self.ax.plot(points[:, 0], points[:, 1], points[:, 2], color=color, linewidth=self.linewidth)
 
         self.ax.view_init(elev=self.view_pos[1], azim=self.view_pos[2])  
         max_range = self.view_pos[0]
@@ -304,3 +310,14 @@ class Structure:
         self.ding_int += 1
         self.parts.append(Ding(new_code, founded_dians, pos_list))
         return new_code
+
+    def set_color(self, part: str, code: str, color: str):
+        founded_part = self.find_part(part, code)
+        if founded_part is None:
+            raise ValueError(f"未有{part}{code}。")
+        founded_part.color = color
+    
+    def set_colors(self, part: str, color: str):
+        for p in self.parts:
+            if isinstance(p, eval(part)):
+                p.color = color

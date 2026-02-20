@@ -62,6 +62,10 @@ def process_input(structure: Structure):
             put_markdown(help_str),
         ])
         return
+    if re.match(r'观处', line):
+        pin_update('new_input', value='')
+        toast(f"观于径{structure.view_pos[0]}寸俯{structure.view_pos[1]}度侧{structure.view_pos[2]}度", duration=5, color="success")
+        return
     try:
         suc, result = parse_one_line(structure, input_data)
         if suc:
@@ -81,4 +85,4 @@ def process_input(structure: Structure):
         toast(f"处理出错: {str(e)}", color='error')
 
 if __name__ == '__main__':
-    start_server(main, port=8080, debug=True)
+    start_server(main, port=8080, debug=True, cdn=False)
