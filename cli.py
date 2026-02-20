@@ -25,6 +25,8 @@ if __name__ == "__main__":
     elif len(sys.argv) == 2 and os.path.isfile(sys.argv[1]):
         structure = Structure(sys.argv[1])
         for inst in structure.insts:
+            if len(inst.strip()) == 0:
+                continue
             _, result = parse_one_line(structure, inst)
             print(f"{result} <- {inst}")
         # print(len(structure.insts))

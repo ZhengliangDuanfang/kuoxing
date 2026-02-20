@@ -129,49 +129,34 @@ class Lin(Part):
         else:
             raise ValueError("此檩非并于横轴或纵轴者。")
 
-class Cao(Part):
-    def __init__(self, code: str, x1: int, y1: int, z1: int, base_zhu: list[str], base_gong: list[str]):
-        if not len(base_zhu) == 1 and not len(base_gong) == 1:
-            raise ValueError("置槽需于柱一。或于栱一。此程序之失也，请报告之。")
+class Dian(Part):
+    def __init__(self, code: str, x1: int, y1: int, z1: int, base_zhu: list[str], base_gong: list[str], base_lin: list[str]):
+        # if not len(base_zhu) == 1 and not len(base_gong) == 1 and not len(base_lin) == 1:
+            # raise ValueError("置点需于柱一。或于栱一。或于檩一。或于空。此程序之失也，请报告之。")
         super().__init__(code)
         self.x1 = x1
         self.y1 = y1
         self.z1 = z1
         self.base_zhu = base_zhu
         self.base_gong = base_gong
+        self.base_lin = base_lin
 
-class Ji(Part):
-    def __init__(self, code: str, x1: int, y1: int, z1: int, x2: int, y2: int, z2:int, base_cao: list[str], base_lin: list[str]):
-        if x1 == x2 and y1 == y2:
-            raise ValueError("脊不可始终共点。或直垂于地。")
-        if (not len(base_cao) == 2) and (not len(base_lin) == 2):
-            raise ValueError("置脊需于槽二。或于檩二。此程序之失也，请报告之。")
+class Ding(Part):
+    def __init__(self, code: str, base_dian: list[str], pos_list: list[tuple[int, int, int]]):
+        if not len(base_dian) == 3 and not len(base_dian) == 4:
+            raise ValueError("置顶需于点三。或于点四。此程序之失也，请报告之。")
+        if len(pos_list) != len(base_dian):
+            raise ValueError("点与位置数不匹配。此程序之失也，请报告之。")
         super().__init__(code)
-        self.x1 = x1
-        self.y1 = y1
-        self.z1 = z1
-        self.x2 = x2
-        self.y2 = y2
-        self.z2 = z2
-        self.base_cao = base_cao
+        self.base_dian = base_dian
+        self.pos_list = pos_list
     
-    def endpoints(self):
-        return (self.x1, self.y1, self.z1), (self.x2, self.y2, self.z2)
-
-class Yan(Part):
-    def __init__(self, code: str, x1: int, y1: int, z1: int, x2: int, y2: int, z2:int, base_ji: list[str]):
-        if x1 == x2 and y1 == y2:
-            raise ValueError("檐不可始终共点。或直垂于地。")
-        if not len(base_ji) == 2:
-            raise ValueError("置檐需于脊二。此程序之失也，请报告之。")
-        super().__init__(code)
-        self.x1 = x1
-        self.y1 = y1
-        self.z1 = z1
-        self.x2 = x2
-        self.y2 = y2
-        self.z2 = z2
-        self.base_ji = base_ji
-
-    def endpoints(self):
-        return (self.x1, self.y1, self.z1), (self.x2, self.y2, self.z2)
+    def endpoint_list(self):
+        epl = []
+        if len(self.pos_list) == 3:
+            epl += [(self.pos_list[0], self.pos_list[1]), (self.pos_list[1], self.pos_list[2]), (self.pos_list[2], self.pos_list[0])]
+        elif len(self.pos_list) == 4:
+            epl += [(self.pos_list[0], self.pos_list[1]), (self.pos_list[2], self.pos_list[3]), (self.pos_list[0], self.pos_list[2]), (self.pos_list[1], self.pos_list[3])]
+        if len(epl) == 0:
+            raise ValueError("顶未连接任何点。此程序之失也，请报告之。")
+        return epl

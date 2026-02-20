@@ -1,4 +1,4 @@
-from parts import Zhu, Liang, Gong, Lin, Fang, Cao, Ji, Yan
+from parts import Zhu, Liang, Gong, Lin, Fang, Dian, Ding
 from numbering import int_to_code
 import matplotlib
 import matplotlib.pyplot as plt
@@ -14,17 +14,15 @@ class Structure:
         self.gong_int = 0
         self.lin_int = 0
         self.fang_int = 0
-        self.cao_int = 0
-        self.ji_int = 0
-        self.yan_int = 0
+        self.dian_int = 0
+        self.ding_int = 0
         self.show_ref = False
         self.view_pos = [1000, 30, 30]
 
         with open(save_path, "r", encoding="utf-8") as f:
             for line in f:
                 line = line.strip()
-                if line and len(line) > 0:
-                    self.insts.append(line)
+                self.insts.append(line)
         
         matplotlib.use('Agg')
 
@@ -33,9 +31,9 @@ class Structure:
         self.ax = self.fig.add_subplot(111, projection='3d')
         if not self.show_ref:
             self.ax.set_axis_off()
-        lines = [p.endpoints() for p in self.parts if not isinstance(p, Gong) and not isinstance(p, Cao)]
+        lines = [p.endpoints() for p in self.parts if not isinstance(p, Gong) and not isinstance(p, Dian) and not isinstance(p, Ding)]
         for p in self.parts: 
-            if isinstance(p, Gong):
+            if isinstance(p, Gong) or isinstance(p, Ding):
                 lines += p.endpoint_list()
 
         for start, end in lines:
@@ -229,18 +227,18 @@ class Structure:
         self.parts.append(Lin(new_code, x1, x2, y1, y2, z1, extend, [], base_gongs))
         return new_code
 
-    def add_cao_on_zhu_1(self, zhu: str):
+    def add_dian_on_zhu_1(self, zhu: str):
         founded_zhu = self.find_part("Zhu", zhu)
         if founded_zhu is None:
             raise ValueError(f"未有柱{zhu}。")
         _, (x, y, z) = founded_zhu.endpoints()
         
-        new_code = int_to_code(self.cao_int)
-        self.cao_int += 1
-        self.parts.append(Cao(new_code, x, y, z, [zhu], []))
+        new_code = int_to_code(self.dian_int)
+        self.dian_int += 1
+        self.parts.append(Dian(new_code, x, y, z, [zhu], [], []))
         return new_code
 
-    def add_cao_on_gong_1(self, gong: str, in_or_out: str):
+    def add_dian_on_gong_1(self, gong: str, in_or_out: str):
         founded_gong = self.find_part("Gong", gong)
         if founded_gong is None:
             raise ValueError(f"未有栱{gong}。")
@@ -249,70 +247,60 @@ class Structure:
         else:
             x, y, z = founded_gong.x2, founded_gong.y2, founded_gong.z2
         
-        new_code = int_to_code(self.cao_int)
-        self.cao_int += 1
-        self.parts.append(Cao(new_code, x, y, z, [], [gong]))
+        new_code = int_to_code(self.dian_int)
+        self.dian_int += 1
+        self.parts.append(Dian(new_code, x, y, z, [], [gong], []))
         return new_code
 
-    def add_ji_on_lin_2(self, lin1: str, in_or_out1: str, lin2: str, in_or_out2: str):
-        founded_lins = []
-        for lin in [lin1, lin2]:
-            founded_lin = self.find_part("Lin", lin)
-            if founded_lin is None:
-                raise ValueError(f"未有檩{lin}。")
-            founded_lins.append(founded_lin)
-        base_lins = [lin1, lin2]
-        if in_or_out1 == "内":
-            (x1, y1, z1), _ = founded_lins[0].endpoints()
+    def add_dian_on_lin_1(self, lin: str, in_or_out: str):
+        founded_lin = self.find_part("Lin", lin)
+        if founded_lin is None:
+            raise ValueError(f"未有檩{lin}。")
+        if in_or_out == "内":
+            x, y, z = founded_lin.x1, founded_lin.y1, founded_lin.z
         else:
-            _, (x1, y1, z1) = founded_lins[0].endpoints()
-        if in_or_out2 == "内":
-            (x2, y2, z2), _ = founded_lins[1].endpoints()
-        else:
-            _, (x2, y2, z2) = founded_lins[1].endpoints()
-        # if z1 < z2:
-        #     x1, y1, z1, x2, y2, z2 = x2, y2, z2, x1, y1, z1
-        #     base_lins[0], base_lins[1] = base_lins[1], base_lins[0]
-        # elif z1 == z2:
-        #     print(f"置脊于二檩等高者易生错误。请保证相对于建筑主体。前檩{in_or_out1}端位于后檩{in_or_out2}端之内。")
+            x, y, z = founded_lin.x2, founded_lin.y2, founded_lin.z
         
-        new_code = int_to_code(self.ji_int)
-        self.ji_int += 1
-        self.parts.append(Ji(new_code, x1, y1, z1, x2, y2, z2, [], [lin1, lin2]))
-        return new_code
-    
-    def add_ji_on_cao_2(self, cao1: str, cao2: str):
-        founded_caos = []
-        for cao in [cao1, cao2]:
-            founded_cao = self.find_part("Cao", cao)
-            if founded_cao is None:
-                raise ValueError(f"未有檩{cao}。")
-            founded_caos.append(founded_cao)
-        base_caos = [cao1, cao2]
-        x1, y1, z1 = founded_caos[0].x1, founded_caos[0].y1, founded_caos[0].z1
-        x2, y2, z2 = founded_caos[1].x1, founded_caos[1].y1, founded_caos[1].z1
-        # if z1 < z2:
-        #     x1, y1, z1, x2, y2, z2 = x2, y2, z2, x1, y1, z1
-        #     base_caos[0], base_caos[1] = base_caos[1], base_caos[0]
-        # elif z1 == z2:
-        #     print("置脊于二槽等高者易生错误。请保证相对于建筑主体。前槽位于后槽之内。")
-        
-        new_code = int_to_code(self.ji_int)
-        self.ji_int += 1
-        self.parts.append(Ji(new_code, x1, y1, z1, x2, y2, z2, [cao1, cao2], []))
+        new_code = int_to_code(self.dian_int)
+        self.dian_int += 1
+        self.parts.append(Dian(new_code, x, y, z, [], [], [lin]))
         return new_code
 
-    def add_yan_on_ji_2(self, ji1: str, ji2: str):
-        founded_ji = []
-        for ji in [ji1, ji2]:
-            founded_ji.append(self.find_part("Ji", ji))
-        if None in founded_ji:
-            raise ValueError(f"未有脊{ji1}或{ji2}。")
-
-        _, (x1, y1, z1) = founded_ji[0].endpoints()
-        _, (x2, y2, z2) = founded_ji[1].endpoints()
+    def add_dian_in_air(self, x: int, y: int, z: int):
         
-        new_code = int_to_code(self.yan_int)
-        self.yan_int += 1
-        self.parts.append(Yan(new_code, x1, y1, z1, x2, y2, z2, [ji1, ji2]))
+        new_code = int_to_code(self.dian_int)
+        self.dian_int += 1
+        self.parts.append(Dian(new_code, x, y, z, [], [], []))
+        return new_code
+
+    def add_ding_on_dian_3(self, dian1: str, dian2: str, dian3:str):
+        founded_dians = []
+        for dian in [dian1, dian2, dian3]:
+            founded_dian = self.find_part("Dian", dian)
+            if founded_dian is None:
+                raise ValueError(f"未有点{dian}。")
+            founded_dians.append(founded_dian)
+        pos_list = [(dian.x1, dian.y1, dian.z1) for dian in founded_dians]
+        
+        new_code = int_to_code(self.ding_int)
+        self.ding_int += 1
+        self.parts.append(Ding(new_code, founded_dians, pos_list))
+        return new_code
+
+    def add_ding_on_dian_4(self, dian1: str, dian2: str, dian3:str, dian4: str):
+        founded_dians = []
+        for dian in [dian1, dian2, dian3, dian4]:
+            founded_dian = self.find_part("Dian", dian)
+            if founded_dian is None:
+                raise ValueError(f"未有点{dian}。")
+            founded_dians.append(founded_dian)
+        pos_list = [(dian.x1, dian.y1, dian.z1) for dian in founded_dians]
+        vec1 = (pos_list[1][0] - pos_list[0][0], pos_list[1][1] - pos_list[0][1], pos_list[1][2] - pos_list[0][2])
+        vec2 = (pos_list[3][0] - pos_list[2][0], pos_list[3][1] - pos_list[2][1], pos_list[3][2] - pos_list[2][2])
+        if vec1[0] * vec2[0] + vec1[1] * vec2[1] + vec1[2] * vec2[2] <= 0:
+            raise ValueError("四点夹角大于九十度。")
+        
+        new_code = int_to_code(self.ding_int)
+        self.ding_int += 1
+        self.parts.append(Ding(new_code, founded_dians, pos_list))
         return new_code

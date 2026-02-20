@@ -21,7 +21,7 @@ help_str = """每指令一行。全角句号自动忽略。
 置檐于脊<码>至脊<码>
 ```
 - `<码>`以天干地支形式，见于添加成功提示。
-- `<数>`应以「一百二十有三」形式。
+- `<数>`应以「一百二十有三」形式，接受从零到九百九十有九的范围。
 - `(甲|乙)`意为二选一即可。
 - 「内」「外」以横纵轴坐标区分构件端侧。
 
@@ -54,11 +54,12 @@ def parse_one_line(structure: Structure, line: str) -> tuple[bool, str]:
         "置檩于柱二": (r"置檩于柱([" + all_in_code + r"]+)至柱([" + all_in_code + r"]+)延([" + all_in_number + r"]+)寸", ),
         "置檩于栱二": (r"置檩于栱([" + all_in_code + r"]+)(内|外)至栱([" + all_in_code + r"]+)(内|外)延([" + all_in_number + r"]+)寸",),
         
-        "置槽于柱一": (r"置槽于柱([" + all_in_code + r"]+)", ),
-        "置槽于栱一": (r"置槽于栱([" + all_in_code + r"]+)(内|外)", ),
-        "置脊于檩二": (r"置脊于檩([" + all_in_code + r"]+)(内|外)至檩([" + all_in_code + r"]+)(内|外)", ),
-        "置脊于槽二": (r"置脊于槽([" + all_in_code + r"]+)至槽([" + all_in_code + r"]+)", ),
-        "置檐于脊二": (r"置檐于脊([" + all_in_code + r"]+)至脊([" + all_in_code + r"]+)", ),
+        "置点于柱一": (r"置点于柱([" + all_in_code + r"]+)", ),
+        "置点于栱一": (r"置点于栱([" + all_in_code + r"]+)(内|外)", ),
+        "置点于檩一": (r"置点于檩([" + all_in_code + r"]+)(内|外)", ),
+        "置点于空": (r"置点于横([" + all_in_number + r"]+)寸纵([" + all_in_number + r"]+)寸高([" + all_in_number + r"]+)寸", ),
+        "置顶于点三": (r"置顶于点([" + all_in_code + r"]+)至点([" + all_in_code + r"]+)及点([" + all_in_code + r"]+)", ),
+        "置顶于点四": (r"置顶于点([" + all_in_code + r"]+)及点([" + all_in_code + r"]+)至点([" + all_in_code + r"]+)及点([" + all_in_code + r"]+)", ),
         
         "显轴": (r"显轴", ),
         "隐轴": (r"隐轴", ),
@@ -232,7 +233,7 @@ def parse_one_line(structure: Structure, line: str) -> tuple[bool, str]:
         except ValueError as e:
             return False, str(e)
 
-    re_str = re_dict["置槽于柱一"][0]
+    re_str = re_dict["置点于柱一"][0]
     match = re.match(re_str, line)
     if match:
         zhu1 = match.groups()[0]
@@ -241,12 +242,12 @@ def parse_one_line(structure: Structure, line: str) -> tuple[bool, str]:
             return False, try_code_result
         # 合法指令
         try:
-            code = structure.add_cao_on_zhu_1(zhu1)
-            return True, f"置槽{code}"
+            code = structure.add_dian_on_zhu_1(zhu1)
+            return True, f"置点{code}"
         except ValueError as e:
             return False, str(e)
 
-    re_str = re_dict["置槽于栱一"][0]
+    re_str = re_dict["置点于栱一"][0]
     match = re.match(re_str, line)
     if match:
         gong1, in_or_out1 = match.groups()
@@ -255,50 +256,65 @@ def parse_one_line(structure: Structure, line: str) -> tuple[bool, str]:
             return False, try_code_result
         # 合法指令
         try:
-            code = structure.add_cao_on_gong_1(gong1, in_or_out1)
-            return True, f"置槽{code}"
+            code = structure.add_dian_on_gong_1(gong1, in_or_out1)
+            return True, f"置点{code}"
         except ValueError as e:
             return False, str(e)
 
-    re_str = re_dict["置脊于檩二"][0]
+    re_str = re_dict["置点于檩一"][0]
     match = re.match(re_str, line)
     if match:
-        lin1, in_or_out1, lin2, in_or_out2 = match.groups()
-        try_code_result = try_code_to_int_batch((lin1, lin2))
+        lin1, in_or_out1 = match.groups()
+        try_code_result = try_code_to_int_batch((lin1,))
         if try_code_result != "":
             return False, try_code_result
         # 合法指令
         try:
-            code = structure.add_ji_on_lin_2(lin1, in_or_out1, lin2, in_or_out2)
-            return True, f"置脊{code}"
+            code = structure.add_dian_on_lin_1(lin1, in_or_out1)
+            return True, f"置点{code}"
         except ValueError as e:
             return False, str(e)
 
-    re_str = re_dict["置脊于槽二"][0]
+    re_str = re_dict["置点于空"][0]
     match = re.match(re_str, line)
     if match:
-        cao1, cao2 = match.groups()
-        try_code_result = try_code_to_int_batch((cao1, cao2))
+        x, y, z = match.groups()
+        try:
+            x, y, z = number_to_int_batch((x, y, z))
+        except ValueError as e:
+            return False, str(e)
+        # 合法指令
+        try:
+            code = structure.add_dian_in_air(x, y, z)
+            return True, f"置点{code}"
+        except ValueError as e:
+            return False, str(e)
+
+    re_str = re_dict["置顶于点三"][0]
+    match = re.match(re_str, line)
+    if match:
+        dian1, dian2, dian3 = match.groups()
+        try_code_result = try_code_to_int_batch((dian1, dian2, dian3))
         if try_code_result != "":
             return False, try_code_result
         # 合法指令
         try:
-            code = structure.add_ji_on_cao_2(cao1, cao2)
-            return True, f"置脊{code}"
+            code = structure.add_ding_on_dian_3(dian1, dian2, dian3)
+            return True, f"置顶{code}"
         except ValueError as e:
             return False, str(e)
 
-    re_str = re_dict["置檐于脊二"][0]
+    re_str = re_dict["置顶于点四"][0]
     match = re.match(re_str, line)
     if match:
-        ji1, ji2 = match.groups()
-        try_code_result = try_code_to_int_batch((ji1, ji2))
+        dian1, dian2, dian3, dian4 = match.groups()
+        try_code_result = try_code_to_int_batch((dian1, dian2, dian3, dian4))
         if try_code_result != "":
             return False, try_code_result
         # 合法指令
         try:
-            code = structure.add_yan_on_ji_2(ji1, ji2)
-            return True, f"置檐{code}"
+            code = structure.add_ding_on_dian_4(dian1, dian2, dian3, dian4)
+            return True, f"置顶{code}"
         except ValueError as e:
             return False, str(e)
 

@@ -27,6 +27,8 @@ def main():
             toast(f"创建文件失败: {file_name}", color="error")
     structure = Structure(file_name)
     for inst in structure.insts:
+        if len(inst.strip()) == 0:
+            continue
         _, result = parse_one_line(structure, inst)
     structure.render()
     # 创建布局
