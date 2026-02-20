@@ -168,3 +168,35 @@ class Ding(Part):
             return [(self.color, self.pos_list[0], self.pos_list[1], self.pos_list[2]), (self.color, self.pos_list[1], self.pos_list[2], self.pos_list[3])]
         else:
             raise ValueError("顶未连接任何点。此程序之失也，请报告之。")
+
+class Ji(Part):
+    def __init__(self, code: str, base_dian: list[str], pos_list: list[tuple[int, int, int]]):
+        if not len(base_dian) == 2 and not len(pos_list) == 2:
+            raise ValueError("置脊需于点二。此程序之失也，请报告之。")
+        super().__init__(code)
+        self.base_dian = base_dian
+        self.pos_list = pos_list
+        self.color = "black"
+
+    def endpoints(self):
+        return self.pos_list[0], self.pos_list[1]
+
+class Wall(Part):
+    def __init__(self, code: str, x1: int, y1: int, z1: int, x2: int, y2: int, z2: int):
+        if x1 == x2 and y1 == y2 and z1 == z2:
+            raise ValueError("墙之两端点不可全同。")
+        if (x1 == x2 and y1 == y2) or (z1 == z2 and y1 == y2) or (z1 == z2 and x1 == x2):
+            raise ValueError("墙之两端点不可共轴。")
+        if z1 == z2:
+            raise ValueError("墙高不可为零。")
+        super().__init__(code)
+        self.x1 = x1
+        self.x2 = x2
+        self.y1 = y1
+        self.y2 = y2
+        self.z1 = z1
+        self.z2 = z2
+        self.color = "#ff4500"
+    
+    def triangle_list_with_color(self):
+        return [(self.color, (self.x1, self.y1, self.z1), (self.x2, self.y2, self.z2), (self.x1, self.y1, self.z2)), (self.color, (self.x2, self.y2, self.z2), (self.x2, self.y2, self.z1), (self.x1, self.y1, self.z1))]

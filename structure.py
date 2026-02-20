@@ -1,7 +1,9 @@
-from parts import Zhu, Liang, Gong, Lin, Fang, Dian, Ding
+from parts import Zhu, Liang, Gong, Lin, Fang, Dian, Ding, Ji, Wall
 from numbering import int_to_code
 import matplotlib
 import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d.art3d import Poly3DCollection
+
 import numpy as np
 
 class Structure:
@@ -16,12 +18,14 @@ class Structure:
         self.fang_int = 0
         self.dian_int = 0
         self.ding_int = 0
+        self.ji_int = 0
+        self.wall_int = 0
         self.show_ref = False
         self.view_pos = [1000, 30, 30]
         self.linewidth = 3
         self.ding_up = 10
-        self.show_ding_egde = False
-        self.show_ding_transparent = True
+        self.show_ding_edge = False
+        self.show_surface_transparent = True
 
         with open(save_path, "r", encoding="utf-8") as f:
             for line in f:
@@ -35,8 +39,32 @@ class Structure:
         self.ax = self.fig.add_subplot(111, projection='3d')
         if not self.show_ref:
             self.ax.set_axis_off()
+
+        # 屋顶面渲染
+        transparency = 0.5 if self.show_surface_transparent else 1
+        edgecolor = "black" if self.show_ding_edge else "none"
+        for p in self.parts: 
+            if isinstance(p, Ding):
+                line_list = p.triangle_list_with_color()
+                for color, p1, p2, p3 in line_list:                 
+                    mesh = Poly3DCollection([[[p1[0], p1[1], p1[2]+self.ding_up], [p2[0], p2[1], p2[2]+self.ding_up], [p3[0], p3[1], p3[2]+self.ding_up]]], 
+                       alpha=transparency,
+                       facecolors=[color]*3,
+                       edgecolor=edgecolor,
+                       linewidths=1)
+                    self.ax.add_collection3d(mesh)
+            if isinstance(p, Wall):
+                line_list = p.triangle_list_with_color()
+                for color, p1, p2, p3 in line_list:
+                    mesh = Poly3DCollection([[p1, p2, p3]], 
+                       alpha=transparency,
+                       facecolors=[color]*3,
+                       edgecolor='none',
+                       linewidths=1)
+                    self.ax.add_collection3d(mesh)
         
-        lines = [(p.color, p.endpoints()) for p in self.parts if not (isinstance(p, Gong) or isinstance(p, Dian) or isinstance(p, Ding))]
+        # 基本构件渲染
+        lines = [(p.color, p.endpoints()) for p in self.parts if not (isinstance(p, Gong) or isinstance(p, Dian) or isinstance(p, Ding) or isinstance(p, Ji) or isinstance(p, Wall))]
         for p in self.parts: 
             if isinstance(p, Gong):
                 lines += p.endpoint_list_with_color()
@@ -44,22 +72,17 @@ class Structure:
             points = np.array([start, end])
             self.ax.plot(points[:, 0], points[:, 1], points[:, 2], color=color, linewidth=self.linewidth)
 
+        # 屋顶相关构件渲染
         for p in self.parts: 
             if isinstance(p, Dian):
                 endpoint = p.endpoint()
                 self.ax.scatter(endpoint[0], endpoint[1], endpoint[2], color=p.color, s=self.linewidth*10, marker='.')
-
-        transparency = 0.5 if self.show_ding_transparent else 1
-        edgecolor = "black" if self.show_ding_egde else "none"
-        for p in self.parts: 
-            if isinstance(p, Ding):
-                line_list = p.triangle_list_with_color()
-                for color, p1, p2, p3 in line_list:
-                    x = np.array([p1[0], p2[0], p3[0]])
-                    y = np.array([p1[1], p2[1], p3[1]])
-                    z = np.array([p1[2]+self.ding_up, p2[2]+self.ding_up, p3[2]+self.ding_up])
-                    self.ax.plot_trisurf(x, y, z, alpha=transparency, color=color, edgecolor=edgecolor)
-
+            elif isinstance(p, Ji):
+                start, end = p.endpoints()
+                points = np.array([(start[0], start[1], start[2]+self.ding_up), (end[0], end[1], end[2]+self.ding_up)])
+                self.ax.plot(points[:, 0], points[:, 1], points[:, 2], color=p.color, linewidth=self.linewidth)
+        
+        # 视角
         self.ax.view_init(elev=self.view_pos[1], azim=self.view_pos[2])  
         max_range = self.view_pos[0]
         self.ax.set_xlim([0, max_range])
@@ -345,6 +368,26 @@ class Structure:
         new_code = int_to_code(self.ding_int)
         self.ding_int += 1
         self.parts.append(Ding(new_code, founded_dians, pos_list))
+        return new_code
+
+    def add_ji_on_dian_2(self, dian1: str, dian2: str):
+        founded_dians = []
+        for dian in [dian1, dian2]:
+            founded_dian = self.find_part("Dian", dian)
+            if founded_dian is None:
+                raise ValueError(f"未有点{dian}。")
+            founded_dians.append(founded_dian)
+        pos_list = [(dian.x1, dian.y1, dian.z1) for dian in founded_dians]
+        
+        new_code = int_to_code(self.ji_int)
+        self.ji_int += 1
+        self.parts.append(Ji(new_code, founded_dians, pos_list))
+        return new_code
+
+    def add_wall(self, x1: int, y1: int, z1: int, x2: int, y2: int, z2: int):
+        new_code = int_to_code(self.wall_int)
+        self.wall_int += 1
+        self.parts.append(Wall(new_code, x1, y1, z1, x2, y2, z2))
         return new_code
 
     def set_color(self, part: str, code: str, color: str):

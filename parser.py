@@ -3,15 +3,15 @@ from structure import Structure
 from numbering import all_in_number, all_in_code, part_map, color_map, try_code_to_int_batch, number_to_int_batch
 
 help_str = """每指令一行。全角句号自动忽略。
-
-添加构件: 
 ```
+# 添加构件
 置柱于地横<数>寸纵<数>寸高<数>寸
 置柱于梁<码>深<数>寸高<数>寸
 置柱于栱<码>(内|外)高<数>寸
+置垂花柱于梁<码>深<数>寸高<数>寸垂<数>寸
 置梁于柱<码>至柱<码>内延<数>寸外延<数>寸
 置栱于梁<码>深<数>寸(顺|逆)内横<数>寸纵<数>寸高<数>寸外横<数>寸纵<数>寸高<数>寸
-置枋于柱<码>至柱<码>起<数>寸宽<数>寸高<数>寸内延<数>寸外延<数>寸
+置枋于柱<码>起<数>寸至柱<码>起<数>寸宽<数>寸高<数>寸内延<数>寸外延<数>寸
 置檩于柱<码>至柱<码>延<数>寸
 置檩于栱<码>(内|外)至栱<码>(内|外)延<数>寸
 置点于柱<码>
@@ -19,23 +19,27 @@ help_str = """每指令一行。全角句号自动忽略。
 置点于檩<码>(内|外)
 置顶于点<码>至点<码>及点<码>
 置顶于点<码>及点<码>至点<码>及点<码>
+置脊于点<码>至点<码>
+置墙于横<数>寸纵<数>寸高<数>寸至横<数>寸纵<数>寸高<数>寸
 ```
 - `<码>`以天干地支形式，见于添加成功提示。
 - `<数>`应以「一百二十有三」形式，接受从零到九百九十有九的范围。
+- `<构>`表示构件类型（柱、梁、栱、枋、檩、点、顶、脊、墙）。
+- `<色>`表示可选择的显示颜色（朱、橙、黄、绿、青、蓝、紫、黛、棕、黑）。
 - `(甲|乙)`意为二选一即可。
 - 「内」「外」以横纵轴坐标区分构件端侧。
 
-调整视角: 
 ```
-观于径<数>寸俯<数>度侧<数>度
-```
-显示/关闭坐标轴：
-```
-显/隐轴
-```
-显示本帮助: 
-```
-释
+起顶以<数>寸 # 使脊、顶在显示时，相比于设定位置，额外抬高一定高度
+观处 # 获取当前视角
+观于径<数>寸俯<数>度侧<数>度 # 调整视角
+显轴/隐轴 # 显示/隐藏坐标轴
+显顶边/隐顶边 # 显示/隐藏顶边
+实面/虚面 # 不透明化/透明化
+示<构>以<色> # 修改特定类型构件颜色
+示<构><码>以<色> # 修改单个构件颜色
+设构径<数>寸 # 设置全部构件线条显示宽度
+释 # 显示本帮助
 ```"""
 
 def parse_one_line(structure: Structure, line: str) -> tuple[bool, str]:
@@ -52,6 +56,7 @@ def parse_one_line(structure: Structure, line: str) -> tuple[bool, str]:
         "置栱于梁一": (r"置栱于梁([" + all_in_code + r"]+)深([" + all_in_number + r"]+)寸(顺|逆)内横([" + all_in_number + r"]+)寸纵([" + all_in_number + r"]+)寸高([" + all_in_number + r"]+)寸外横([" + all_in_number + r"]+)寸纵([" + all_in_number + r"]+)寸高([" + all_in_number + r"]+)寸", ),
         "置枋于柱二": (r"置枋于柱([" + all_in_code + r"]+)起([" + all_in_number + r"]+)寸至柱([" + all_in_code + r"]+)起([" + all_in_number + r"]+)寸内延([" + all_in_number + r"]+)寸外延([" + all_in_number + r"]+)寸", ),
         "置垂花柱于梁一": (r"置垂花柱于梁([" + all_in_code + r"]+)深([" + all_in_number + r"]+)寸高([" + all_in_number + r"]+)寸垂([" + all_in_number + r"]+)寸", ),
+        "置墙": (r"置墙于横([" + all_in_number + r"]+)寸纵([" + all_in_number + r"]+)寸高([" + all_in_number + r"]+)寸至横([" + all_in_number + r"]+)寸纵([" + all_in_number + r"]+)寸高([" + all_in_number + r"]+)寸", ),
         # 屋面结构
         "置檩于柱二": (r"置檩于柱([" + all_in_code + r"]+)至柱([" + all_in_code + r"]+)延([" + all_in_number + r"]+)寸", ),
         "置檩于栱二": (r"置檩于栱([" + all_in_code + r"]+)(内|外)至栱([" + all_in_code + r"]+)(内|外)延([" + all_in_number + r"]+)寸",),
@@ -61,6 +66,7 @@ def parse_one_line(structure: Structure, line: str) -> tuple[bool, str]:
         "置点于空": (r"置点于横([" + all_in_number + r"]+)寸纵([" + all_in_number + r"]+)寸高([" + all_in_number + r"]+)寸", ),
         "置顶于点三": (r"置顶于点([" + all_in_code + r"]+)至点([" + all_in_code + r"]+)及点([" + all_in_code + r"]+)", ),
         "置顶于点四": (r"置顶于点([" + all_in_code + r"]+)及点([" + all_in_code + r"]+)至点([" + all_in_code + r"]+)及点([" + all_in_code + r"]+)", ),
+        "置脊于点二": (r"置脊于点([" + all_in_code + r"]+)至点([" + all_in_code + r"]+)", ),
         "起顶": (r"起顶以([" + all_in_number + r"]+)寸", ),
         # 一般显示设置
         "显轴": (r"显轴", ),
@@ -73,8 +79,8 @@ def parse_one_line(structure: Structure, line: str) -> tuple[bool, str]:
         # 渲染显示设置
         "显顶边": (r"显顶边", ),
         "隐顶边": (r"隐顶边", ),
-        "显顶面": (r"显顶面", ),
-        "虚顶面": (r"虚顶面", ),
+        "实面": (r"实面", ),
+        "虚面": (r"虚面", ),
     }
 
     re_str = re_dict["设构径"][0]
@@ -92,25 +98,25 @@ def parse_one_line(structure: Structure, line: str) -> tuple[bool, str]:
     re_str = re_dict["显顶边"][0]
     match = re.match(re_str, line)
     if match:
-        structure.show_ding_egde = True
+        structure.show_ding_edge = True
         return True, "设置成功"
 
     re_str = re_dict["隐顶边"][0]
     match = re.match(re_str, line)
     if match:
-        structure.show_ding_egde = False
+        structure.show_ding_edge = False
         return True, "设置成功"
 
-    re_str = re_dict["显顶面"][0]
+    re_str = re_dict["实面"][0]
     match = re.match(re_str, line)
     if match:
-        structure.show_ding_transparent = False
+        structure.show_surface_transparent = False
         return True, "设置成功"
 
-    re_str = re_dict["虚顶面"][0]
+    re_str = re_dict["虚面"][0]
     match = re.match(re_str, line)
     if match:
-        structure.show_ding_transparent = True
+        structure.show_surface_transparent = True
         return True, "设置成功"
 
     re_str = re_dict["起顶"][0]
@@ -413,6 +419,35 @@ def parse_one_line(structure: Structure, line: str) -> tuple[bool, str]:
         try:
             code = structure.add_ding_on_dian_4(dian1, dian2, dian3, dian4)
             return True, f"置顶{code}"
+        except ValueError as e:
+            return False, str(e)
+
+    re_str = re_dict["置脊于点二"][0]
+    match = re.match(re_str, line)
+    if match:
+        dian1, dian2 = match.groups()
+        try_code_result = try_code_to_int_batch((dian1, dian2))
+        if try_code_result != "":
+            return False, try_code_result
+        # 合法指令
+        try:
+            code = structure.add_ji_on_dian_2(dian1, dian2)
+            return True, f"置脊{code}"
+        except ValueError as e:
+            return False, str(e)
+
+    re_str = re_dict["置墙"][0]
+    match = re.match(re_str, line)
+    if match:
+        x1, y1, z1, x2, y2, z2 = match.groups()
+        try:
+            x1, y1, z1, x2, y2, z2 = number_to_int_batch((x1, y1, z1, x2, y2, z2))
+        except ValueError as e:
+            return False, str(e)
+        # 合法指令
+        try:
+            code = structure.add_wall(x1, y1, z1, x2, y2, z2)
+            return True, f"置墙{code}"
         except ValueError as e:
             return False, str(e)
 
