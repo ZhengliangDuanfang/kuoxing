@@ -323,8 +323,7 @@ class Structure:
         if x1 != x2 and y1 != y2:
             raise ValueError("檩需并于横轴。或于纵轴。")
         elif (x1 == x2 and y1 > y2) or (y1 == y2 and x1 > x2):
-            x1, y1, z1 = x2, y2, z2
-            x2, y2, z2 = x1, y1, z1
+            x1, y1, z1, x2, y2, z2 = x2, y2, z2, x1, y1, z1
         
         new_code = int_to_code(self.lin_int)
         self.lin_int += 1
@@ -368,9 +367,9 @@ class Structure:
         if founded_lin is None:
             raise ValueError(f"未有檩{lin}。")
         if in_or_out == "内":
-            x, y, z = founded_lin.x1, founded_lin.y1, founded_lin.z
+            (x, y, z), _ = founded_lin.endpoints()
         else:
-            x, y, z = founded_lin.x2, founded_lin.y2, founded_lin.z
+            _, (x, y, z) = founded_lin.endpoints()
         
         new_code = int_to_code(self.dian_int)
         self.dian_int += 1
