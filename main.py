@@ -3,19 +3,18 @@ from pywebio.input import input
 from pywebio.output import put_column, put_row, put_scope, put_image, put_markdown, toast, use_scope, put_buttons, clear, popup
 from pywebio.session import set_env
 from pywebio.pin import pin, put_input, pin_update
-from structure import Structure
-from parser import parse_one_line, help_str
+from app.structure import Structure
+from app.parser import parse_one_line, help_str
 import os
 import re
 import sys
-import webbrowser
 
 def main():
     """主函数"""
     # 设置页面标题和布局
     set_env(title="实时输入输出界面", output_animation=False)
     while True:
-        file_name = str(input("打开或创建文件"))
+        file_name = str(input(label="打开或创建文件"))
         if os.path.isfile(file_name):
             # toast(f"文件已存在: {file_name}")
             break
@@ -101,10 +100,5 @@ def process_input(structure: Structure):
         toast(f"处理出错: {str(e)}", color='error')
 
 if __name__ == '__main__':
-    if len(sys.argv) == 2:
-        port = int(sys.argv[1])
-    else:
-        port = 8080
-    # 打开默认浏览器
-    webbrowser.open(f"http://localhost:{port}")
-    start_server(main, port=port, debug=True, cdn=False)
+    port = int(sys.argv[1]) if len(sys.argv) == 2 else 8080
+    start_server(main, host="localhost", port=port, debug=True, cdn=False, auto_open_webbrowser=True)

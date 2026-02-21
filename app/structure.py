@@ -1,9 +1,8 @@
-from parts import Zhu, Liang, Gong, Lin, Fang, Dian, Ding, Ji, Wall
-from numbering import int_to_code
+from app.parts import Zhu, Liang, Gong, Lin, Fang, Dian, Ding, Ji, Wall
+from app.numbering import int_to_code
 import matplotlib
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
-
 import numpy as np
 
 class Structure:

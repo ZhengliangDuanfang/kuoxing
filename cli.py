@@ -1,5 +1,5 @@
-from parser import parse_one_line, help_str
-from structure import Structure
+from app.parser import parse_one_line, help_str
+from app.structure import Structure
 import sys
 import os
 import re

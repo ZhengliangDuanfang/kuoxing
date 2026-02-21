@@ -6,6 +6,8 @@
 
 ## 安装与运行方法
 
+基本要求：Python 执行环境；[PyWebIO 库所支持自动打开浏览器功能的操作系统](https://pywebio.readthedocs.io/zh-cn/latest/platform.html#pywebio.platform.tornado.start_server)。
+
 ```shell
 # 搭建环境
 python -m venv venv
@@ -19,6 +21,7 @@ python cli.py
 ```
 
 ## 命令操作语义规则
+
 ```
 # 显示帮助
 释

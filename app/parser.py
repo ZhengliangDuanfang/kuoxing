@@ -1,6 +1,6 @@
 import re
-from structure import Structure
-from numbering import all_in_number, all_in_code, part_map, color_map, try_code_to_int_batch, number_to_int_batch
+from app.structure import Structure
+from app.numbering import all_in_number, all_in_code, part_map, color_map, try_code_to_int_batch, number_to_int_batch
 
 help_str = """每指令一行。全角句号自动忽略。
 ```
@@ -28,7 +28,7 @@ help_str = """每指令一行。全角句号自动忽略。
 - `<构>`表示构件类型（柱、梁、栱、枋、檩、点、顶、脊、墙）。
 - `<色>`表示可选择的显示颜色（朱、橙、黄、绿、青、蓝、紫、黛、棕、黑）。
 - `(甲|乙)`意为二选一即可。
-- 「内」「外」以横纵轴坐标区分构件端侧。
+- 「内」「外」以横纵坐标区分构件端侧。
 
 ```
 起顶以<数>寸 # 使脊、顶在显示时，相比于设定位置，额外抬高一定高度
