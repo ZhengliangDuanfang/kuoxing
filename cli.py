@@ -20,15 +20,19 @@ if __name__ == "__main__":
             success, result = parse_one_line(structure, line)
             if success:
                 structure.insts.append(line)
-                structure.dump_insts()
+                structure.comments.append(result if result != "设置成功" else "")
                 structure.render()
+                structure.dump_insts()
             print(result)
     elif len(sys.argv) == 2 and os.path.isfile(sys.argv[1]):
         structure = Structure(sys.argv[1])
-        for inst in structure.insts:
+        for inst, comment in zip(structure.insts, structure.comments):
             if len(inst.strip()) == 0:
                 continue
             _, result = parse_one_line(structure, inst)
+            if comment == "" and result != "设置成功":
+                comment = result
             print(f"{result} <- {inst}")
         # print(len(structure.insts))
         structure.render()
+        structure.dump_insts()

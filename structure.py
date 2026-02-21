@@ -11,6 +11,7 @@ class Structure:
         self.save_path = save_path
         self.parts = []
         self.insts = []
+        self.comments = []
         self.zhu_int = 0
         self.liang_int = 0
         self.gong_int = 0
@@ -29,8 +30,14 @@ class Structure:
 
         with open(save_path, "r", encoding="utf-8") as f:
             for line in f:
-                line = line.strip()
-                self.insts.append(line)
+                pos = line.find("#")
+                if pos == -1:
+                    self.comments.append("")
+                    inst = line.strip()
+                else:
+                    self.comments.append(line[pos+1:].strip())
+                    inst = line[:pos].strip()
+                self.insts.append(inst)
         
         matplotlib.use('Agg')
 
@@ -94,9 +101,15 @@ class Structure:
         plt.savefig(f'{self.save_path.split(".")[0]}.png', dpi=300, bbox_inches='tight')
 
     def dump_insts(self):
-        insts = "\n".join(self.insts)
+        output_list = []
+        for inst, comment in zip(self.insts, self.comments):
+            if comment == "":
+                output_list.append(inst)
+            else:
+                output_list.append(f"{inst} # {comment}")
+        output = "\n".join(output_list)
         with open(self.save_path, "w", encoding="utf-8") as f:
-            f.write(insts)
+            f.write(output)
 
     def find_part(self, class_name: str, code: str):
         for part in self.parts:

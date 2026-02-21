@@ -74,7 +74,7 @@ class Gong(Part):
         return (self.x1, self.y1, self.z1), (self.x2, self.y2, self.z2)
     
     def endpoint_list_with_color(self):
-        return [((self.x1, self.y1, self.z1), (self.x0, self.y0, self.z0)), ((self.x0, self.y0, self.z0), (self.x2, self.y2, self.z2))]
+        return [(self.color, ((self.x1, self.y1, self.z1), (self.x0, self.y0, self.z0))), (self.color, ((self.x0, self.y0, self.z0), (self.x2, self.y2, self.z2)))]
 
 class Fang(Part):
     def __init__(self, code: str, x1: int, x2: int, y1: int, y2: int, z: int, ext1: int, ext2: int, base_zhu: list[str]):

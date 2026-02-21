@@ -26,11 +26,14 @@ def main():
         except:
             toast(f"创建文件失败: {file_name}", color="error")
     structure = Structure(file_name)
-    for inst in structure.insts:
+    for i, (inst, comment) in enumerate(zip(structure.insts, structure.comments)):
         if len(inst.strip()) == 0:
             continue
         _, result = parse_one_line(structure, inst)
+        if comment == "" and result != "设置成功":
+            structure.comments[i] = result
     structure.render()
+    structure.dump_insts()
     # 创建布局
     put_column([
         put_scope('img_display'),
@@ -71,6 +74,7 @@ def process_input(structure: Structure):
         if suc:
             toast(f"{result} <- {input_data}", duration=5, color="success")
             structure.insts.append(input_data)
+            structure.comments.append(result if result != "设置成功" else "")
         else:
             toast(f"{result} <- {input_data}", duration=5, color="error")
             return
