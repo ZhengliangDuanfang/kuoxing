@@ -30,7 +30,10 @@ def main():
     for i, (inst, comment) in enumerate(zip(structure.insts, structure.comments)):
         if len(inst.strip()) == 0:
             continue
-        _, result = parse_one_line(structure, inst)
+        suc, result = parse_one_line(structure, inst)
+        if not suc:
+            toast(f"{result} <- {inst}", duration=5, color="error")
+            continue
         if comment == "" and result != "设置成功":
             structure.comments[i] = result
     structure.render()

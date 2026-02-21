@@ -1,7 +1,8 @@
-from parser import parse_one_line
+from parser import parse_one_line, help_str
 from structure import Structure
 import sys
 import os
+import re
 
 if __name__ == "__main__":
     if len(sys.argv) == 1:
@@ -16,10 +17,25 @@ if __name__ == "__main__":
                 print(f"创建文件失败: {save_path}")
         structure = Structure(save_path)
         while True:
-            line = input("> ")
-            success, result = parse_one_line(structure, line)
+            input_data = input("> ")
+            line = re.sub(r'\s+', '', input_data)
+            line = re.sub(r'。', '', line)
+            if re.match(r'释', line):
+                print(help_str)
+                continue
+            if re.match(r'观处', line):
+                print(f"观于径{structure.view_pos[0]}寸俯{structure.view_pos[1]}度侧{structure.view_pos[2]}度")
+                continue
+            if re.match(r'审', line):
+                warning_list = structure.dependency_check()
+                if len(warning_list) == 0:
+                    print("未发现未使用构件")
+                else:
+                    print("\n".join(warning_list))
+                continue
+            success, result = parse_one_line(structure, input_data)
             if success:
-                structure.insts.append(line)
+                structure.insts.append(input_data)
                 structure.comments.append(result if result != "设置成功" else "")
                 structure.render()
                 structure.dump_insts()

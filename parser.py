@@ -20,7 +20,8 @@ help_str = """每指令一行。全角句号自动忽略。
 置顶于点<码>至点<码>及点<码>
 置顶于点<码>及点<码>至点<码>及点<码>
 置脊于点<码>至点<码>
-置墙于横<数>寸纵<数>寸高<数>寸至横<数>寸纵<数>寸高<数>寸
+置四角墙于横<数>寸纵<数>寸高<数>寸至横<数>寸纵<数>寸高<数>寸
+置三角墙于横<数>寸纵<数>寸高<数>寸至横<数>寸纵<数>寸高<数>寸
 ```
 - `<码>`以天干地支形式，见于添加成功提示。
 - `<数>`应以「一百二十有三」形式，接受从零到九百九十有九的范围。
@@ -56,7 +57,8 @@ def parse_one_line(structure: Structure, line: str) -> tuple[bool, str]:
         "置栱于梁一": (r"置栱于梁([" + all_in_code + r"]+)深([" + all_in_number + r"]+)寸(顺|逆)内横([" + all_in_number + r"]+)寸纵([" + all_in_number + r"]+)寸高([" + all_in_number + r"]+)寸外横([" + all_in_number + r"]+)寸纵([" + all_in_number + r"]+)寸高([" + all_in_number + r"]+)寸", ),
         "置枋于柱二": (r"置枋于柱([" + all_in_code + r"]+)起([" + all_in_number + r"]+)寸至柱([" + all_in_code + r"]+)起([" + all_in_number + r"]+)寸内延([" + all_in_number + r"]+)寸外延([" + all_in_number + r"]+)寸", ),
         "置垂花柱于梁一": (r"置垂花柱于梁([" + all_in_code + r"]+)深([" + all_in_number + r"]+)寸高([" + all_in_number + r"]+)寸垂([" + all_in_number + r"]+)寸", ),
-        "置墙": (r"置墙于横([" + all_in_number + r"]+)寸纵([" + all_in_number + r"]+)寸高([" + all_in_number + r"]+)寸至横([" + all_in_number + r"]+)寸纵([" + all_in_number + r"]+)寸高([" + all_in_number + r"]+)寸", ),
+        "置四角墙": (r"置四角墙于横([" + all_in_number + r"]+)寸纵([" + all_in_number + r"]+)寸高([" + all_in_number + r"]+)寸至横([" + all_in_number + r"]+)寸纵([" + all_in_number + r"]+)寸高([" + all_in_number + r"]+)寸", ),
+        "置三角墙": (r"置三角墙于横([" + all_in_number + r"]+)寸纵([" + all_in_number + r"]+)寸高([" + all_in_number + r"]+)寸至横([" + all_in_number + r"]+)寸纵([" + all_in_number + r"]+)寸高([" + all_in_number + r"]+)寸", ),
         # 屋面结构
         "置檩于柱二": (r"置檩于柱([" + all_in_code + r"]+)至柱([" + all_in_code + r"]+)延([" + all_in_number + r"]+)寸", ),
         "置檩于栱二": (r"置檩于栱([" + all_in_code + r"]+)(内|外)至栱([" + all_in_code + r"]+)(内|外)延([" + all_in_number + r"]+)寸",),
@@ -436,7 +438,7 @@ def parse_one_line(structure: Structure, line: str) -> tuple[bool, str]:
         except ValueError as e:
             return False, str(e)
 
-    re_str = re_dict["置墙"][0]
+    re_str = re_dict["置四角墙"][0]
     match = re.match(re_str, line)
     if match:
         x1, y1, z1, x2, y2, z2 = match.groups()
@@ -446,7 +448,22 @@ def parse_one_line(structure: Structure, line: str) -> tuple[bool, str]:
             return False, str(e)
         # 合法指令
         try:
-            code = structure.add_wall(x1, y1, z1, x2, y2, z2)
+            code = structure.add_rect_wall(x1, y1, z1, x2, y2, z2)
+            return True, f"置墙{code}"
+        except ValueError as e:
+            return False, str(e)
+
+    re_str = re_dict["置三角墙"][0]
+    match = re.match(re_str, line)
+    if match:
+        x1, y1, z1, x2, y2, z2 = match.groups()
+        try:
+            x1, y1, z1, x2, y2, z2 = number_to_int_batch((x1, y1, z1, x2, y2, z2))
+        except ValueError as e:
+            return False, str(e)
+        # 合法指令
+        try:
+            code = structure.add_tri_wall(x1, y1, z1, x2, y2, z2)
             return True, f"置墙{code}"
         except ValueError as e:
             return False, str(e)

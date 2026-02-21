@@ -37,7 +37,10 @@ class Structure:
                     self.comments.append("")
                     inst = line.strip()
                 else:
-                    self.comments.append(line[pos+1:].strip())
+                    comment = line[pos+1:].strip()
+                    if comment[0] == "置" and len(comment) == 4:
+                        comment = ""
+                    self.comments.append(comment)
                     inst = line[:pos].strip()
                 self.insts.append(inst)
         
@@ -443,10 +446,22 @@ class Structure:
         self.part_names.append(f"脊{new_code}")
         return new_code
 
-    def add_wall(self, x1: int, y1: int, z1: int, x2: int, y2: int, z2: int):
+    def add_rect_wall(self, x1: int, y1: int, z1: int, x2: int, y2: int, z2: int):
         new_code = int_to_code(self.wall_int)
         self.wall_int += 1
-        self.parts.append(Wall(new_code, x1, y1, z1, x2, y2, z2))
+        if z2 < z1:
+            self.parts.append(Wall(new_code, x1, y1, z1, x2, y2, z2, "rect"))
+        else:
+            self.parts.append(Wall(new_code, x2, y2, z2, x1, y1, z1, "rect"))
+        return new_code
+
+    def add_tri_wall(self, x1: int, y1: int, z1: int, x2: int, y2: int, z2: int):
+        new_code = int_to_code(self.wall_int)
+        self.wall_int += 1
+        if z2 < z1:
+            self.parts.append(Wall(new_code, x1, y1, z1, x2, y2, z2, "tri"))
+        else:
+            self.parts.append(Wall(new_code, x2, y2, z2, x1, y1, z1, "tri"))
         return new_code
 
     def set_color(self, part: str, code: str, color: str):
