@@ -4,10 +4,11 @@ from pywebio.output import put_column, put_row, put_scope, put_image, put_markdo
 from pywebio.session import set_env
 from pywebio.pin import pin, put_input, pin_update
 from structure import Structure
-from parser import parse_one_line
+from parser import parse_one_line, help_str
 import os
 import re
-from parser import help_str
+import sys
+import webbrowser
 
 def main():
     """主函数"""
@@ -89,4 +90,10 @@ def process_input(structure: Structure):
         toast(f"处理出错: {str(e)}", color='error')
 
 if __name__ == '__main__':
-    start_server(main, port=8080, debug=True, cdn=False)
+    if len(sys.argv) == 2:
+        port = int(sys.argv[1])
+    else:
+        port = 8080
+    # 打开默认浏览器
+    webbrowser.open(f"http://localhost:{port}")
+    start_server(main, port=port, debug=True, cdn=False)
