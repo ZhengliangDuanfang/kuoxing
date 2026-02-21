@@ -24,7 +24,10 @@ if __name__ == "__main__":
                 structure.render()
                 structure.dump_insts()
             print(result)
-    elif len(sys.argv) == 2 and os.path.isfile(sys.argv[1]):
+    elif len(sys.argv) == 2:
+        if not os.path.isfile(sys.argv[1]):
+            print(f"文件不存在: {sys.argv[1]}")
+            exit(1)
         structure = Structure(sys.argv[1])
         for inst, comment in zip(structure.insts, structure.comments):
             if len(inst.strip()) == 0:

@@ -70,6 +70,14 @@ def process_input(structure: Structure):
         pin_update('new_input', value='')
         toast(f"观于径{structure.view_pos[0]}寸俯{structure.view_pos[1]}度侧{structure.view_pos[2]}度", duration=5, color="success")
         return
+    if re.match(r'审', line):
+        warning_list = structure.dependency_check()
+        pin_update('new_input', value='')
+        if len(warning_list) == 0:
+            toast("未发现未使用构件", duration=5, color="success")
+        else:
+            toast("\n".join(warning_list), duration=5, color="error")
+        return
     try:
         suc, result = parse_one_line(structure, input_data)
         if suc:

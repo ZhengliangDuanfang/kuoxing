@@ -12,6 +12,8 @@ class Structure:
         self.parts = []
         self.insts = []
         self.comments = []
+        self.part_names = []
+        self.dependencies = []
         self.zhu_int = 0
         self.liang_int = 0
         self.gong_int = 0
@@ -40,6 +42,20 @@ class Structure:
                 self.insts.append(inst)
         
         matplotlib.use('Agg')
+
+    def dependency_check(self):
+        warnings = []
+        base_in_dependency = [dep[0] for dep in self.dependencies]
+        for partname in self.part_names:
+            if partname[0] in ["点", "柱"]:
+                if partname not in base_in_dependency:
+                    warnings.append(f"{partname}未覆以顶")
+            if partname[0] == "栱":
+                if f"{partname}内" not in base_in_dependency:
+                    warnings.append(f"{partname}内未覆以构件")
+                if f"{partname}外" not in base_in_dependency:
+                    warnings.append(f"{partname}外未覆以构件")
+        return warnings
 
     def render(self):
         self.fig = plt.figure(figsize=(10, 8))
@@ -120,7 +136,8 @@ class Structure:
     def add_zhu_on_di(self, x: int, y: int, height: int):
         new_code = int_to_code(self.zhu_int)
         self.zhu_int += 1
-        self.parts.append(Zhu(new_code, x, y, 0, height, [], []))
+        self.parts.append(Zhu(new_code, x, y, 0, height))
+        self.part_names.append(f"柱{new_code}")
         return new_code
 
     def add_zhu_on_liang_1(self, liang: str, depth: int, height: int):
@@ -139,7 +156,9 @@ class Structure:
 
         new_code = int_to_code(self.zhu_int)
         self.zhu_int += 1
-        self.parts.append(Zhu(new_code, x, y, z1, height, [liang], []))
+        self.parts.append(Zhu(new_code, x, y, z1, height))
+        self.dependencies.append((f"梁{liang}", f"柱{new_code}"))
+        self.part_names.append(f"柱{new_code}")
         return new_code
     
     def add_zhu_on_gong_1(self, gong: str, in_or_out:str, height: int):
@@ -153,7 +172,8 @@ class Structure:
 
         new_code = int_to_code(self.zhu_int)
         self.zhu_int += 1
-        self.parts.append(Zhu(new_code, x1, y1, z1, height, [], [gong]))
+        self.parts.append(Zhu(new_code, x1, y1, z1, height))
+        self.dependencies.append((f"栱{gong}{in_or_out}", f"柱{new_code}"))
         return new_code
 
     def add_liang_on_zhu_2(self, zhu1: str, zhu2: str, in_ext: int, out_ext: int):
@@ -165,18 +185,19 @@ class Structure:
             founded_zhus.append(founded_zhu)
         x1, y1 = founded_zhus[0].x, founded_zhus[0].y
         x2, y2 = founded_zhus[1].x, founded_zhus[1].y
-        base_zhus = [zhu1, zhu2]
         if x1 != x2 and y1 != y2:
             raise ValueError("梁需并于横轴。或于纵轴。")
         elif (x1 == x2 and y1 > y2) or (y1 == y2 and x1 > x2):
             y1, y2 = y2, y1
             x1, x2 = x2, x1
-            base_zhus[0], base_zhus[1] = base_zhus[1], base_zhus[0]
         top_z_zhus = min([zhu.z + zhu.height for zhu in founded_zhus])
 
         new_code = int_to_code(self.liang_int)
         self.liang_int += 1
-        self.parts.append(Liang(new_code, x1, x2, y1, y2, top_z_zhus, in_ext, out_ext, base_zhus))
+        self.parts.append(Liang(new_code, x1, x2, y1, y2, top_z_zhus, in_ext, out_ext))
+        self.dependencies.append((f"柱{zhu1}", f"梁{new_code}"))
+        self.dependencies.append((f"柱{zhu2}", f"梁{new_code}"))
+        self.part_names.append(f"梁{new_code}")
         return new_code
 
     def add_gong_on_liang_1(self, liang: str, depth:int, pos: str, dx1:int, dy1:int, dz1:int, dx2:int, dy2:int, dz2:int):
@@ -197,8 +218,9 @@ class Structure:
         
         new_code = int_to_code(self.gong_int)
         self.gong_int += 1
-        self.parts.append(Gong(new_code, x1, y1, z1, x1+dx1, y1+dy1, z1+dz1, x1+dx2, y1+dy2, z1+dz2, [founded_liang]))
-        
+        self.parts.append(Gong(new_code, x1, y1, z1, x1+dx1, y1+dy1, z1+dz1, x1+dx2, y1+dy2, z1+dz2))
+        self.dependencies.append((f"梁{liang}", f"栱{new_code}"))
+        self.part_names.append(f"栱{new_code}")
         return new_code
 
     def add_fang_on_zhu_2(self, zhu1: str, zhu2: str, dz1: int, dz2: int, in_ext: int, out_ext: int):
@@ -210,7 +232,6 @@ class Structure:
             founded_zhus.append(founded_zhu)
         x1, y1, z1, h1 = founded_zhus[0].x, founded_zhus[0].y, founded_zhus[0].z, founded_zhus[0].height
         x2, y2, z2, h2 = founded_zhus[1].x, founded_zhus[1].y, founded_zhus[1].z, founded_zhus[1].height
-        base_zhus = [zhu1, zhu2]
         if z1 + dz1 != z2 + dz2:
             raise ValueError("柱其共枋者。底需同高。")
         z = z1 + dz1
@@ -221,11 +242,13 @@ class Structure:
         elif (x1 == x2 and y1 > y2) or (y1 == y2 and x1 > x2):
             y1, y2 = y2, y1
             x1, x2 = x2, x1
-            base_zhus[0], base_zhus[1] = base_zhus[1], base_zhus[0]
         
         new_code = int_to_code(self.fang_int)
         self.fang_int += 1
-        self.parts.append(Fang(new_code, x1, x2, y1, y2, z, in_ext, out_ext, base_zhus))
+        self.parts.append(Fang(new_code, x1, x2, y1, y2, z, in_ext, out_ext))
+        self.dependencies.append((f"柱{zhu1}", f"枋{new_code}"))
+        self.dependencies.append((f"柱{zhu2}", f"枋{new_code}"))
+        self.part_names.append(f"枋{new_code}")
         return new_code
 
     def add_chui_on_liang_1(self, liang: str, depth: int, height: int, lower: int):
@@ -246,7 +269,9 @@ class Structure:
         z = z1 - lower
         new_code = int_to_code(self.zhu_int)
         self.zhu_int += 1
-        self.parts.append(Zhu(new_code, x, y, z, height+lower, [liang], []))
+        self.parts.append(Zhu(new_code, x, y, z, height+lower))
+        self.dependencies.append((f"梁{liang}", f"柱{new_code}"))
+        self.part_names.append(f"柱{new_code}")
         return new_code
 
     def add_lin_on_zhu_2(self, zhu1: str, zhu2: str, extend: int):
@@ -259,7 +284,6 @@ class Structure:
         _, (x1, y1, z1) = founded_zhus[0].endpoints()
         _, (x2, y2, z2) = founded_zhus[1].endpoints()
 
-        base_zhus = [zhu1, zhu2]
         if z1 != z2:
             raise ValueError("檩之始终需同高。故二柱之顶端需同高。")
         if x1 != x2 and y1 != y2:
@@ -267,11 +291,13 @@ class Structure:
         elif (x1 == x2 and y1 > y2) or (y1 == y2 and x1 > x2):
             y1, y2 = y2, y1
             x1, x2 = x2, x1
-            base_zhus[0], base_zhus[1] = base_zhus[1], base_zhus[0]
 
         new_code = int_to_code(self.lin_int)
         self.lin_int += 1
-        self.parts.append(Lin(new_code, x1, x2, y1, y2, z1, extend, base_zhus, []))
+        self.parts.append(Lin(new_code, x1, x2, y1, y2, z1, extend))
+        self.dependencies.append((f"柱{zhu1}", f"檩{new_code}"))
+        self.dependencies.append((f"柱{zhu2}", f"檩{new_code}"))
+        self.part_names.append(f"檩{new_code}")
         return new_code
 
     def add_lin_on_gong_2(self, gong1: str, in_or_out1:str, gong2: str, in_or_out2:str, extend: int):
@@ -290,7 +316,6 @@ class Structure:
         else:
             x2, y2, z2 = founded_gongs[1].x2, founded_gongs[1].y2, founded_gongs[1].z2
 
-        base_gongs = [gong1, gong2]
         if z1 != z2:
             raise ValueError("檩之始终需同高。故二栱之顶端需同高。")
         if x1 != x2 and y1 != y2:
@@ -298,11 +323,13 @@ class Structure:
         elif (x1 == x2 and y1 > y2) or (y1 == y2 and x1 > x2):
             x1, y1, z1 = x2, y2, z2
             x2, y2, z2 = x1, y1, z1
-            base_gongs[0], base_gongs[1] = base_gongs[1], base_gongs[0]
         
         new_code = int_to_code(self.lin_int)
         self.lin_int += 1
-        self.parts.append(Lin(new_code, x1, x2, y1, y2, z1, extend, [], base_gongs))
+        self.parts.append(Lin(new_code, x1, x2, y1, y2, z1, extend))
+        self.dependencies.append((f"栱{gong1}{in_or_out1}", f"檩{new_code}"))
+        self.dependencies.append((f"栱{gong2}{in_or_out2}", f"檩{new_code}"))
+        self.part_names.append(f"檩{new_code}")
         return new_code
 
     def add_dian_on_zhu_1(self, zhu: str):
@@ -313,7 +340,9 @@ class Structure:
         
         new_code = int_to_code(self.dian_int)
         self.dian_int += 1
-        self.parts.append(Dian(new_code, x, y, z, [zhu], [], []))
+        self.parts.append(Dian(new_code, x, y, z))
+        self.dependencies.append((f"柱{zhu}", f"点{new_code}"))
+        self.part_names.append(f"点{new_code}")
         return new_code
 
     def add_dian_on_gong_1(self, gong: str, in_or_out: str):
@@ -327,7 +356,9 @@ class Structure:
         
         new_code = int_to_code(self.dian_int)
         self.dian_int += 1
-        self.parts.append(Dian(new_code, x, y, z, [], [gong], []))
+        self.parts.append(Dian(new_code, x, y, z))
+        self.dependencies.append((f"栱{gong}{in_or_out}", f"点{new_code}"))
+        self.part_names.append(f"点{new_code}")
         return new_code
 
     def add_dian_on_lin_1(self, lin: str, in_or_out: str):
@@ -341,14 +372,17 @@ class Structure:
         
         new_code = int_to_code(self.dian_int)
         self.dian_int += 1
-        self.parts.append(Dian(new_code, x, y, z, [], [], [lin]))
+        self.parts.append(Dian(new_code, x, y, z))
+        self.dependencies.append((f"檩{lin}", f"点{new_code}"))
+        self.part_names.append(f"点{new_code}")
         return new_code
 
     def add_dian_in_air(self, x: int, y: int, z: int):
         
         new_code = int_to_code(self.dian_int)
         self.dian_int += 1
-        self.parts.append(Dian(new_code, x, y, z, [], [], []))
+        self.parts.append(Dian(new_code, x, y, z))
+        self.part_names.append(f"点{new_code}")
         return new_code
 
     def add_ding_on_dian_3(self, dian1: str, dian2: str, dian3:str):
@@ -362,7 +396,11 @@ class Structure:
         
         new_code = int_to_code(self.ding_int)
         self.ding_int += 1
-        self.parts.append(Ding(new_code, founded_dians, pos_list))
+        self.parts.append(Ding(new_code, pos_list))
+        self.dependencies.append((f"点{dian1}", f"顶{new_code}"))
+        self.dependencies.append((f"点{dian2}", f"顶{new_code}"))
+        self.dependencies.append((f"点{dian3}", f"顶{new_code}"))
+        self.part_names.append(f"顶{new_code}")
         return new_code
 
     def add_ding_on_dian_4(self, dian1: str, dian2: str, dian3:str, dian4: str):
@@ -380,7 +418,12 @@ class Structure:
         
         new_code = int_to_code(self.ding_int)
         self.ding_int += 1
-        self.parts.append(Ding(new_code, founded_dians, pos_list))
+        self.parts.append(Ding(new_code, pos_list))
+        self.dependencies.append((f"点{dian1}", f"顶{new_code}"))
+        self.dependencies.append((f"点{dian2}", f"顶{new_code}"))
+        self.dependencies.append((f"点{dian3}", f"顶{new_code}"))
+        self.dependencies.append((f"点{dian4}", f"顶{new_code}"))
+        self.part_names.append(f"顶{new_code}")
         return new_code
 
     def add_ji_on_dian_2(self, dian1: str, dian2: str):
@@ -394,7 +437,10 @@ class Structure:
         
         new_code = int_to_code(self.ji_int)
         self.ji_int += 1
-        self.parts.append(Ji(new_code, founded_dians, pos_list))
+        self.parts.append(Ji(new_code, pos_list))
+        self.dependencies.append((f"点{dian1}", f"脊{new_code}"))
+        self.dependencies.append((f"点{dian2}", f"脊{new_code}"))
+        self.part_names.append(f"脊{new_code}")
         return new_code
 
     def add_wall(self, x1: int, y1: int, z1: int, x2: int, y2: int, z2: int):
