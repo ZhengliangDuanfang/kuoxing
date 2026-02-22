@@ -8,23 +8,12 @@ from app.parser import parse_one_line, help_str
 import os
 import re
 import sys
+from functools import partial
 
-def main():
+def main(file_name: str):
     """主函数"""
     # 设置页面标题和布局
-    set_env(title="实时输入输出界面", output_animation=False)
-    while True:
-        file_name = str(input(label="打开或创建文件"))
-        if os.path.isfile(file_name):
-            # toast(f"文件已存在: {file_name}")
-            break
-        try:
-            with open(file_name, "w") as f:
-                pass
-            if os.path.isfile(file_name):
-                break
-        except:
-            toast(f"创建文件失败: {file_name}", color="error")
+    set_env(title="廓形 - 图形化界面", output_animation=True)
     structure = Structure(file_name)
     for i, (inst, comment) in enumerate(zip(structure.insts, structure.comments)):
         if len(inst.strip()) == 0:
@@ -100,5 +89,21 @@ def process_input(structure: Structure):
         toast(f"处理出错: {str(e)}", color='error')
 
 if __name__ == '__main__':
-    port = int(sys.argv[1]) if len(sys.argv) == 2 else 8080
-    start_server(main, host="localhost", port=port, debug=True, cdn=False, auto_open_webbrowser=True)
+    if len(sys.argv) < 2 or not sys.argv[1].endswith(".txt"):
+        print("Usage: python main.py <filename>.txt [port]")
+        exit(1)
+    file_name = str(sys.argv[1])
+    port = int(sys.argv[2]) if len(sys.argv) == 3 else 8080
+    
+    if not os.path.isfile(file_name):
+        try:
+            with open(file_name, "w") as f:
+                pass
+            if not os.path.isfile(file_name):
+                print(f"创建文件失败: {file_name}")
+                exit(1)
+        except:
+            print(f"创建文件失败: {file_name}")
+            exit(1)
+
+    start_server(partial(main, file_name), host="localhost", port=port, debug=True, cdn=False, auto_open_webbrowser=True)
