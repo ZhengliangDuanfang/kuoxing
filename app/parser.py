@@ -40,8 +40,10 @@ help_str = """每指令一行。全角句号自动忽略。
 示<构>以<色> # 修改特定类型构件颜色
 示<构><码>以<色> # 修改单个构件颜色
 设构径<数>寸 # 设置全部构件线条显示宽度
+审 # 检查未使用构件
 释 # 显示本帮助
-```"""
+```
+在批量执行时，指令`释`、`审`以及`观处`不会被执行。"""
 
 def parse_one_line(structure: Structure, line: str) -> tuple[bool, str]:
     line = re.sub(r'\s+', '', line)
@@ -74,7 +76,6 @@ def parse_one_line(structure: Structure, line: str) -> tuple[bool, str]:
         "显轴": (r"显轴", ),
         "隐轴": (r"隐轴", ),
         "观于": (r"观于径([" + all_in_number + r"]+)寸俯([" + all_in_number + r"]+)度侧([" + all_in_number + r"]+)度", ),
-        "观处": (r"观处", ),
         "皆示": (r"示(["+ "".join(part_map.keys()) + r"])以(["+ "".join(color_map.keys()) + r"])", ),
         "示": (r"示(["+ "".join(part_map.keys()) + r"])([" + all_in_code + r"]+)以(["+ "".join(color_map.keys()) + r"])", ),
         "设构径": (r"设构径([" + all_in_number + r"]+)寸", ),
@@ -83,6 +84,8 @@ def parse_one_line(structure: Structure, line: str) -> tuple[bool, str]:
         "隐顶边": (r"隐顶边", ),
         "实面": (r"实面", ),
         "虚面": (r"虚面", ),
+        "显点": (r"显点", ),
+        "隐点": (r"隐点", ),
     }
 
     re_str = re_dict["设构径"][0]
@@ -95,6 +98,18 @@ def parse_one_line(structure: Structure, line: str) -> tuple[bool, str]:
             return False, str(e)
         # 合法指令
         structure.linewidth = r
+        return True, "设置成功"
+
+    re_str = re_dict["显点"][0]
+    match = re.match(re_str, line)
+    if match:
+        structure.show_dian = True
+        return True, "设置成功"
+
+    re_str = re_dict["隐点"][0]
+    match = re.match(re_str, line)
+    if match:
+        structure.show_dian = False
         return True, "设置成功"
 
     re_str = re_dict["显顶边"][0]
@@ -142,6 +157,8 @@ def parse_one_line(structure: Structure, line: str) -> tuple[bool, str]:
             return False, try_code_result
         if part not in part_map.keys():
             return False, f"未知构件类型{part}"
+        if part == "点":
+            structure.show_dian = True
         # 合法指令
         structure.set_color(part_map[part], code, color_map[color])
         return True, "设置成功"
@@ -152,6 +169,8 @@ def parse_one_line(structure: Structure, line: str) -> tuple[bool, str]:
         part, color = match.groups()
         if part not in part_map.keys():
             return False, f"未知构件类型{part}"
+        if part == "点":
+            structure.show_dian = True
         # 合法指令
         structure.set_colors(part_map[part], color_map[color])
         return True, "设置成功"

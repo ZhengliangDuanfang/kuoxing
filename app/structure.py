@@ -8,6 +8,25 @@ import numpy as np
 class Structure:
     def __init__(self, save_path: str = "example.txt"):
         self.save_path = save_path
+        self.clear_setting()
+
+        with open(save_path, "r", encoding="utf-8") as f:
+            for line in f:
+                pos = line.find("#")
+                if pos == -1:
+                    self.comments.append("")
+                    inst = line.strip()
+                else:
+                    comment = line[pos+1:].strip()
+                    if comment[0] == "置" and len(comment) == 4:
+                        comment = ""
+                    self.comments.append(comment)
+                    inst = line[:pos].strip()
+                self.insts.append(inst)
+        
+        matplotlib.use('Agg')
+    
+    def clear_setting(self):
         self.parts = []
         self.insts = []
         self.comments = []
@@ -28,22 +47,7 @@ class Structure:
         self.ding_up = 10
         self.show_ding_edge = False
         self.show_surface_transparent = True
-
-        with open(save_path, "r", encoding="utf-8") as f:
-            for line in f:
-                pos = line.find("#")
-                if pos == -1:
-                    self.comments.append("")
-                    inst = line.strip()
-                else:
-                    comment = line[pos+1:].strip()
-                    if comment[0] == "置" and len(comment) == 4:
-                        comment = ""
-                    self.comments.append(comment)
-                    inst = line[:pos].strip()
-                self.insts.append(inst)
-        
-        matplotlib.use('Agg')
+        self.show_dian = False
 
     def dependency_check(self):
         warnings = []
@@ -99,7 +103,7 @@ class Structure:
 
         # 屋顶相关构件渲染
         for p in self.parts: 
-            if isinstance(p, Dian):
+            if isinstance(p, Dian) and self.show_dian:
                 endpoint = p.endpoint()
                 self.ax.scatter(endpoint[0], endpoint[1], endpoint[2], color=p.color, s=self.linewidth*10, marker='.')
             elif isinstance(p, Ji):
@@ -118,7 +122,7 @@ class Structure:
         plt.tight_layout()
         plt.savefig(f'{self.save_path.split(".")[0]}.png', dpi=300, bbox_inches='tight')
 
-    def dump_insts(self):
+    def get_insts_and_comments(self):
         output_list = []
         for inst, comment in zip(self.insts, self.comments):
             if comment == "":
@@ -126,6 +130,10 @@ class Structure:
             else:
                 output_list.append(f"{inst} # {comment}")
         output = "\n".join(output_list)
+        return output
+
+    def dump_insts(self):
+        output = self.get_insts_and_comments()
         with open(self.save_path, "w", encoding="utf-8") as f:
             f.write(output)
 

@@ -62,6 +62,5 @@ python cli.py
 
 - 显示与渲染
     - 解决面的穿模问题（见`test/jiuji.txt`）
-    - 构件突出到面外的问题（见`test/jiuji.txt`）
     - 脊时隐时现的问题（见`test/jiuji.txt`）
 - 历史记录编辑窗口
