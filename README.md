@@ -15,7 +15,7 @@ source venv/Scripts/activate # Git Bash
 pip install -r requirements.txt
 
 # 运行网页界面（推荐）
-python main.py <文件路径> 8080 # 端口号可自定义，默认8080
+python main.py 8080 # 端口号可自定义，默认8080
 # 运行命令行界面
 python cli.py
 ```
@@ -63,4 +63,3 @@ python cli.py
 - 显示与渲染
     - 解决面的穿模问题（见`test/jiuji.txt`）
     - 脊时隐时现的问题（见`test/jiuji.txt`）
-- 历史记录编辑窗口
